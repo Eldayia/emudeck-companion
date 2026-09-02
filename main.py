@@ -214,19 +214,35 @@ class Plugin:
             self.session_manager.current = None
             return {"ok": True, "count": len(self.profile_store.profiles)}
 
+    def _build_diagnostics(self) -> dict[str, Any]:
+        session = self.session_manager.refresh()
+        backend_name = (
+            "SteamClient.Input"
+            if self.action_engine.frontend_input
+            else self.action_engine.backend.name if self.action_engine.backend else None
+        )
+        diagnostics = build_diagnostics(
+            session.as_dict() if session else None,
+            self.emudeck,
+            backend_name,
+            self.last_action,
+        )
+        diagnostics["document_server"] = self.document_server.diagnostics()
+        return diagnostics
+
     async def get_diagnostics(self) -> dict[str, Any]:
         async with self._lock:
-            session = self.session_manager.refresh()
-            backend_name = (
-                "SteamClient.Input"
-                if self.action_engine.frontend_input
-                else self.action_engine.backend.name if self.action_engine.backend else None
+            return self._build_diagnostics()
+
+    async def export_diagnostics(self) -> dict[str, Any]:
+        async with self._lock:
+            diagnostics = self._build_diagnostics()
+            destination = self.settings_path.parent / "diagnostics.json"
+            temporary = destination.with_suffix(".tmp")
+            temporary.write_text(
+                json.dumps(diagnostics, indent=2, ensure_ascii=False) + "\n",
+                encoding="utf-8",
             )
-            diagnostics = build_diagnostics(
-                session.as_dict() if session else None,
-                self.emudeck,
-                backend_name,
-                self.last_action,
-            )
-            diagnostics["document_server"] = self.document_server.diagnostics()
-            return diagnostics
+            temporary.replace(destination)
+            decky.logger.info("Diagnostics exported to %s", destination)
+            return {"ok": True, "path": str(destination)}

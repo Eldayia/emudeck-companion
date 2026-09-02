@@ -89,11 +89,32 @@ const getDocumentUrl = callable("get_document_url");
 const executeAction = callable("execute_action");
 const refreshDetection = callable("refresh_detection");
 const getDiagnostics = callable("get_diagnostics");
+const exportDiagnostics = callable("export_diagnostics");
 callable("reload_profiles");
 const getSettings = callable("get_settings");
 const updateSettings = callable("update_settings");
 
 function Diagnostics({ data, onRefresh }) {
+    const copyDiagnostics = async () => {
+        try {
+            if (!navigator.clipboard?.writeText)
+                throw new Error("Clipboard API unavailable");
+            await navigator.clipboard.writeText(JSON.stringify(data, null, 2));
+            toaster.toast({ title: "EmuDeck Companion", body: "Diagnostics copied" });
+        }
+        catch (error) {
+            toaster.toast({ title: "Cannot copy diagnostics", body: String(error) });
+        }
+    };
+    const saveDiagnostics = async () => {
+        try {
+            const result = await exportDiagnostics();
+            toaster.toast({ title: "Diagnostics exported", body: result.path });
+        }
+        catch (error) {
+            toaster.toast({ title: "Cannot export diagnostics", body: String(error) });
+        }
+    };
     const rows = [
         ["EmuDeck", data.emudeck.detected ? "Detected" : "Not detected"],
         ["ES-DE", data.emudeck.esde_detected ? "Detected" : "Not detected"],
@@ -110,7 +131,7 @@ function Diagnostics({ data, onRefresh }) {
         ],
         ["Last action", data.last_action?.message ?? "None"],
     ];
-    return (SP_JSX.jsxs(DFL.PanelSection, { title: "Diagnostics", children: [rows.map(([label, value]) => (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: { width: "100%" }, children: [SP_JSX.jsx("div", { style: { opacity: 0.55, fontSize: "12px" }, children: label }), SP_JSX.jsx("div", { style: { overflowWrap: "anywhere" }, children: value })] }) }, label))), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => void onRefresh(), children: "Refresh Detection" }) })] }));
+    return (SP_JSX.jsxs(DFL.PanelSection, { title: "Diagnostics", children: [rows.map(([label, value]) => (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: { width: "100%" }, children: [SP_JSX.jsx("div", { style: { opacity: 0.55, fontSize: "12px" }, children: label }), SP_JSX.jsx("div", { style: { overflowWrap: "anywhere" }, children: value })] }) }, label))), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => void onRefresh(), children: "Refresh Detection" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => void copyDiagnostics(), children: "Copy Diagnostics" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => void saveDiagnostics(), children: "Export Diagnostics" }) })] }));
 }
 
 function Documents({ documents }) {
