@@ -5,6 +5,7 @@ from copy import deepcopy
 from pathlib import Path
 from typing import Any
 
+from companion_game_detection import extract_rom
 from companion_hotkey_config import MAX_CONFIG_BYTES, process_environment
 from companion_models import ProcessInfo
 
@@ -24,7 +25,16 @@ HOTKEY_SETTINGS = {
     "fullscreen": "input_toggle_fullscreen",
     "quit": "input_exit_emulator",
 }
-CONFIG_KEYS = set(HOTKEY_SETTINGS.values()) | {"input_enable_hotkey", "input_hotkey_device_merge"}
+CONFIG_KEYS = set(HOTKEY_SETTINGS.values()) | {
+    "input_enable_hotkey", "input_hotkey_device_merge", "auto_overrides_enable", "rgui_config_directory",
+}
+# Exact standard core filenames and upstream retro_get_system_info library names.
+# Do not guess from display names or scan unrelated override directories.
+CORE_NAMES = {
+    "mupen64plus_next_libretro": "Mupen64Plus-Next",
+    "snes9x_libretro": "Snes9x",
+    "fbneo_libretro": "FinalBurn Neo",
+}
 KEYS = {key: key for key in "abcdefghijklmnopqrstuvwxyz"} | {
     f"num{number}": str(number) for number in range(10)
 } | {f"f{number}": f"f{number}" for number in range(1, 13)} | {
@@ -59,7 +69,7 @@ def parse_retroarch_config(text: str) -> list[tuple[str, str]]:
 
 
 class RetroArchHotkeyConfig:
-    """Read global/CLI configuration only; automatic content overrides are not inferred."""
+    """Resolve disk configurations and exact known-core automatic override paths."""
 
     def __init__(self, user_home: Path, proc_root: Path = Path("/proc")) -> None:
         self.user_home = user_home
@@ -172,6 +182,64 @@ class RetroArchHotkeyConfig:
                 result.setdefault(key, value)
         return result
 
+    def _apply_overrides(
+        self, profile: dict[str, Any], process: ProcessInfo, config: Path, home: Path,
+        values: dict[str, str], visited: list[Path], report: dict[str, Any],
+    ) -> None:
+        enabled = values.get("auto_overrides_enable", "true").casefold()
+        if enabled in {"false", "0"}:
+            report.update(status="disabled", reason="Automatic overrides disabled in configuration")
+            return
+        if enabled not in {"true", "1"}:
+            raise ValueError("Invalid auto_overrides_enable setting")
+        core_path = ""
+        args = iter(process.argv[1:])
+        for arg in args:
+            if arg == "--":
+                break
+            if arg in {"-L", "--libretro"}:
+                core_path = next(args, "")
+            elif arg.startswith("--libretro="):
+                core_path = arg.partition("=")[2]
+            elif arg.startswith("-L") and len(arg) > 2:
+                core_path = arg[2:]
+        core = CORE_NAMES.get(Path(core_path.replace("\\", "/")).stem)
+        if not core:
+            report.update(status="not_resolved", reason="Core missing from launch arguments or not yet supported")
+            return
+        report["core"] = core
+        rom = extract_rom(process.argv, profile)
+        if not rom or "#" in rom:
+            report.update(status="not_resolved", reason="Content path missing or archive member syntax unsupported")
+            return
+        if "rgui_config_directory" not in values:
+            report.update(status="not_resolved", reason="Override directory not recorded; runtime default cannot be verified")
+            return
+        directory = values["rgui_config_directory"]
+        if directory.startswith(":"):
+            report.update(status="not_resolved", reason="Application-relative override directory is not supported")
+            return
+        content = Path(rom.replace("\\", "/"))
+        needs_cwd = not content.is_absolute() and not rom.startswith("~/")
+        needs_cwd |= directory not in {"", "default"} and not Path(directory).is_absolute() and not directory.startswith("~/")
+        cwd = (self.proc_root / str(process.pid) / "cwd").resolve(strict=True) if needs_cwd else home
+        content = self._path(rom, cwd, home)
+        root = config.parent if directory in {"", "default"} else self._path(directory, cwd, home)
+        report["directory"] = str(root)
+        names = [("core", core), ("directory", content.parent.name), ("game", content.stem)]
+        report.update(status="none", reason="No matching override files on disk", layers=[])
+        for level, name in names:
+            if not name or name in {".", ".."} or any(char in name for char in ("/", "\\", "\0")):
+                raise ValueError("Invalid override name")
+            candidate = root / core / (name + ".cfg")
+            if not self._exists(candidate):
+                continue
+            # Keep the selected root fixed: overrides do not relocate later layers.
+            layer = self._load(candidate, home, set(), visited)
+            values.update(layer)
+            report["layers"].append({"level": level, "path": str(candidate)})
+            report.update(status="applied", reason="Core, directory and game files merged in priority order")
+
     def __call__(self, profile: dict[str, Any], process: ProcessInfo) -> dict[str, Any]:
         if profile.get("hotkey_config_format") != "retroarch":
             return profile
@@ -180,6 +248,7 @@ class RetroArchHotkeyConfig:
         path: Path | None = None
         visited: list[Path] = []
         values: dict[str, str] = {}
+        overrides: dict[str, Any] = {"status": "not_resolved", "reason": "Base configuration unavailable"}
         try:
             path, extras, explicit, home = self._locations(process)
             if not explicit and not self._exists(path):
@@ -189,8 +258,12 @@ class RetroArchHotkeyConfig:
             for extra in extras:
                 values.update(self._load(extra, home, set(), visited))
                 status = "configured"
+            self._apply_overrides(profile, process, path, home, values, visited, overrides)
+            if overrides["status"] == "applied":
+                status = "configured"
         except (OSError, ValueError, RuntimeError):
             status, reason = "unavailable", "Configuration could not be read completely (path, syntax, include or size limit)"
+            overrides.update(status="unavailable", reason=reason)
             values = {}
         finally:
             self._cache = {key: value for key, value in self._cache.items() if key in visited}
@@ -242,6 +315,7 @@ class RetroArchHotkeyConfig:
         effective["hotkey_config"] = {
             "status": status, "path": str(path) if path else "", "paths": [str(p) for p in visited],
             "disabled_actions": disabled,
-            "scope": "Global and CLI configs on disk; automatic core/content overrides and unsaved changes are not resolved",
+            "overrides": overrides,
+            "scope": "Disk configuration and supported launch-core overrides; manual runtime changes and core switches are not tracked",
         }
         return effective

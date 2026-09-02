@@ -138,6 +138,16 @@ function Diagnostics({ data, onRefresh }) {
         if (config.paths && config.paths.length > 1) {
             rows.push(["Hotkey files", config.paths.join(" → ")]);
         }
+        if (config.overrides) {
+            rows.push(["RetroArch overrides", `${config.overrides.status} — ${config.overrides.reason ?? ""}`]);
+            if (config.overrides.core)
+                rows.push(["Override core", config.overrides.core]);
+            if (config.overrides.directory)
+                rows.push(["Override directory", config.overrides.directory]);
+            for (const layer of config.overrides.layers ?? []) {
+                rows.push([`Override: ${layer.level}`, layer.path]);
+            }
+        }
         for (const [action, reason] of Object.entries(config.disabled_actions ?? {})) {
             rows.push([data.session?.actions[action]?.label ?? action, reason]);
         }

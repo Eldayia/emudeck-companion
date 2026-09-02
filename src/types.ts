@@ -20,6 +20,13 @@ export interface EmulatorSession {
     status?: string;
     path?: string;
     paths?: string[];
+    overrides?: {
+      status: string;
+      reason?: string;
+      core?: string;
+      directory?: string;
+      layers?: { level: string; path: string }[];
+    };
     scope?: string;
     disabled_actions?: Record<string, string>;
   };
