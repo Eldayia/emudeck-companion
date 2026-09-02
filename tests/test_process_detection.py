@@ -47,6 +47,32 @@ class ProcessDetectionTests(unittest.TestCase):
         self.assertEqual(match[0]["id"], "melonds")
         self.assertEqual(match[1].pid, 40)
 
+    def test_matches_azahar_appimage_by_command(self):
+        profiles = [{"id": "azahar", "processes": ["azahar", "azahar.AppImage"]}]
+        processes = [ProcessInfo(
+            50,
+            "AppRun",
+            ("/home/deck/Applications/azahar.AppImage", "/roms/game.3ds"),
+            500,
+        )]
+        match = find_emulator(profiles, processes)
+        self.assertIsNotNone(match)
+        assert match is not None
+        self.assertEqual(match[0]["id"], "azahar")
+
+    def test_matches_flycast_flatpak_child(self):
+        profiles = [{"id": "flycast", "processes": ["flycast"]}]
+        processes = [ProcessInfo(
+            60,
+            "flycast",
+            ("flycast", "/home/deck/Emulation/roms/dreamcast/Sonic Adventure.chd"),
+            600,
+        )]
+        match = find_emulator(profiles, processes)
+        self.assertIsNotNone(match)
+        assert match is not None
+        self.assertEqual(match[1].pid, 60)
+
 
 if __name__ == "__main__":
     unittest.main()

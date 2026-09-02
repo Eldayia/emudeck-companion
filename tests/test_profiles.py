@@ -14,7 +14,7 @@ class ProfileStoreTests(unittest.TestCase):
         store.load()
         self.assertEqual({profile["id"] for profile in store.profiles}, {
             "cemu", "duckstation", "pcsx2", "dolphin", "retroarch",
-            "ppsspp", "melonds"
+            "ppsspp", "melonds", "azahar", "flycast"
         })
 
     def test_phase_two_profiles_use_emudeck_hotkeys(self):
@@ -22,11 +22,17 @@ class ProfileStoreTests(unittest.TestCase):
         store.load()
         ppsspp = store.get("ppsspp")
         melonds = store.get("melonds")
+        azahar = store.get("azahar")
+        flycast = store.get("flycast")
         assert ppsspp is not None and melonds is not None
+        assert azahar is not None and flycast is not None
         self.assertEqual(ppsspp["actions"]["save_state"]["keys"], ["f2"])
         self.assertEqual(ppsspp["actions"]["load_state"]["keys"], ["f3"])
         self.assertEqual(melonds["actions"]["save_state"]["keys"], ["leftshift", "f{slot}"])
         self.assertEqual(melonds["actions"]["fast_forward"]["keys"], ["end"])
+        self.assertEqual(azahar["actions"]["save_state"]["keys"], ["leftshift", "f1"])
+        self.assertEqual(azahar["actions"]["swap_screen"]["keys"], ["leftctrl", "tab"])
+        self.assertEqual(flycast["actions"]["emulator_menu"]["keys"], ["tab"])
 
     def test_cemu_has_no_savestate_capability(self):
         store = ProfileStore(ROOT / "defaults" / "emulators")

@@ -6,11 +6,11 @@ It does not replace EmuDeck and does not require EmuDecky.
 
 ## Current status
 
-Version 0.3 includes:
+Version 0.4 includes:
 
 - automatic process and ROM detection through `/proc`;
 - data-driven profiles for Cemu, DuckStation, PCSX2, Dolphin, RetroArch,
-  PPSSPP, and melonDS;
+  PPSSPP, melonDS, Azahar, and Flycast;
 - contextual QAM sections (unsupported actions are hidden);
 - save/load, slots, pause, fast-forward, display, disc, menu, screenshot, and
   graceful quit actions where the profile supports them;
@@ -39,6 +39,12 @@ PPSSPP and melonDS shortcuts mirror EmuDeck's shipped emulator configuration.
 PPSSPP's Quick Menu remains available because its native interface supports
 controller navigation. melonDS exposes direct slots 1–8, its toggle fast-forward
 binding, pause, screen swap, lid, fullscreen, and graceful quit controls.
+
+Azahar exposes EmuDeck's native newest/oldest savestate actions, speed, pause,
+screen layout, rotation, fullscreen, screenshot, and quit shortcuts. Flycast
+exposes its Quick Menu everywhere; save/load and fast-forward are limited to
+Dreamcast ROMs because those keys have different arcade meanings on clean
+Naomi and Atomiswave configurations.
 
 ## Development
 

@@ -1,0 +1,24 @@
+{
+  "id": "azahar",
+  "name": "Azahar",
+  "profile_version": 1,
+  "platform": "Nintendo 3DS",
+  "processes": ["azahar", "azahar-qt", "azahar.AppImage", "azahar.exe"],
+  "rom_extensions": ["3ds", "3dsx", "7z", "app", "axf", "cci", "cia", "cii", "cxi", "elf", "z3dsx", "zcci", "zcxi", "zip"],
+  "default_slot": 0,
+  "savestate_paths": ["saves/azahar/states"],
+  "savestate_patterns": ["{stem}*.cst"],
+  "capabilities": ["save_state", "load_state", "fast_forward", "pause", "swap_screen", "screen_layout", "rotate_screen", "fullscreen", "screenshot", "quit"],
+  "actions": {
+    "save_state": {"label": "Save to Oldest Slot", "method": "hotkey", "keys": ["leftshift", "f1"], "show_slot": false},
+    "load_state": {"label": "Load Newest State", "method": "hotkey", "keys": ["f1"], "show_slot": false},
+    "fast_forward": {"label": "Alternate Speed", "method": "hotkey", "keys": ["home"], "mode": "toggle"},
+    "pause": {"label": "Pause / Resume", "method": "hotkey", "keys": ["pageup"], "mode": "toggle"},
+    "swap_screen": {"label": "Swap Screens", "method": "hotkey", "keys": ["leftctrl", "tab"]},
+    "screen_layout": {"label": "Next Screen Layout", "method": "hotkey", "keys": ["tab"]},
+    "rotate_screen": {"label": "Rotate Screens Upright", "method": "hotkey", "keys": ["f8"]},
+    "fullscreen": {"label": "Fullscreen", "method": "hotkey", "keys": ["f11"], "mode": "toggle"},
+    "screenshot": {"label": "Screenshot", "method": "hotkey", "keys": ["leftctrl", "p"]},
+    "quit": {"label": "Quit Emulator", "method": "hotkey", "keys": ["leftalt", "f4"]}
+  }
+}

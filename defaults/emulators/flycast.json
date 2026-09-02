@@ -1,0 +1,25 @@
+{
+  "id": "flycast",
+  "name": "Flycast",
+  "profile_version": 1,
+  "platform": "Dreamcast / Naomi / Atomiswave",
+  "processes": ["flycast", "flycast.exe"],
+  "rom_extensions": ["7z", "bin", "cdi", "chd", "cue", "dat", "elf", "gdi", "lst", "m3u", "zip"],
+  "default_slot": 0,
+  "savestate_paths": ["saves/flycast/states"],
+  "savestate_patterns": ["{stem}.state*"],
+  "capabilities": ["save_state", "load_state", "fast_forward", "emulator_menu", "quit"],
+  "capability_rules": [
+    {
+      "rom_path_segments": ["atomiswave", "naomi", "naomi2"],
+      "remove": ["save_state", "load_state", "fast_forward"]
+    }
+  ],
+  "actions": {
+    "save_state": {"label": "Save State", "method": "hotkey", "keys": ["f2"], "show_slot": false},
+    "load_state": {"label": "Load State", "method": "hotkey", "keys": ["f1"], "show_slot": false},
+    "fast_forward": {"label": "Fast Forward", "method": "hotkey", "keys": ["enter"], "mode": "toggle"},
+    "emulator_menu": {"label": "Quick Menu", "method": "hotkey", "keys": ["tab"]},
+    "quit": {"label": "Quit Emulator", "method": "hotkey", "keys": ["leftalt", "f4"]}
+  }
+}

@@ -75,6 +75,12 @@ class ActionEngineTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result.dispatch, "steam_input")
         self.assertEqual(result.keys, ["f1"])
 
+    async def test_can_hide_slot_from_save_message(self):
+        session = make_session()
+        session.actions["save_state"]["show_slot"] = False
+        result = await ActionEngine(FakeInputBackend(), debounce_ms=0).execute(session, "save_state")
+        self.assertEqual(result.message, "Save State")
+
     async def test_wraps_emulator_slot_when_configured(self):
         engine = ActionEngine(FakeInputBackend(), debounce_ms=0)
         session = make_session()

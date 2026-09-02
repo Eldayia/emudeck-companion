@@ -90,7 +90,11 @@ class ActionEngine:
             active = not session.toggles.get(action, False)
             session.toggles[action] = active
         label = definition.get("label", action.replace("_", " ").title())
-        suffix = f" — Slot {session.slot}" if action in {"save_state", "load_state"} else ""
+        suffix = (
+            f" — Slot {session.slot}"
+            if action in {"save_state", "load_state"} and definition.get("show_slot", True)
+            else ""
+        )
         if action in {"previous_disc", "next_disc"} and session.current_disc is not None:
             suffix = f" — Disc {session.current_disc}/{len(session.discs)}"
         return ActionResult(

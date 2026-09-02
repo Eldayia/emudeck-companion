@@ -38,6 +38,17 @@ class GameDetectionTests(unittest.TestCase):
             "/home/deck/Emulation/roms/nds/Mario Kart DS.nds",
         )
 
+    def test_extracts_azahar_rom_from_appimage_command(self):
+        profile = {"rom_extensions": ["3ds", "cxi"]}
+        rom = "/home/deck/Emulation/roms/n3ds/Mario Kart 7.3ds"
+        argv = ["/home/deck/Applications/azahar.AppImage", rom]
+        self.assertEqual(extract_rom(argv, profile), rom)
+
+    def test_extracts_flycast_arcade_rom(self):
+        profile = {"rom_extensions": ["lst", "zip"]}
+        argv = ["flycast", "/home/deck/Emulation/roms/naomi/Crazy Taxi.zip"]
+        self.assertEqual(extract_rom(argv, profile), "/home/deck/Emulation/roms/naomi/Crazy Taxi.zip")
+
 
 if __name__ == "__main__":
     unittest.main()
