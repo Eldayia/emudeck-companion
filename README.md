@@ -29,6 +29,11 @@ bundled hotkeys are baseline defaults and must be validated against the
 actual EmuDeck/emulator configuration before a store release. Steam Deck Gaming
 Mode hardware tests are still required.
 
+RetroArch's native menu is intentionally not exposed: a clean EmuDeck profile
+disables its keyboard menu binding and Decky cannot safely inject the configured
+gamepad chord into the active controller. Supported RetroArch operations remain
+available directly as controller-friendly QAM actions.
+
 ## Development
 
 Requirements: Node.js 16.14+, pnpm 9, and Python 3.10+.

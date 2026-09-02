@@ -24,6 +24,15 @@ class ProfileStoreTests(unittest.TestCase):
         self.assertNotIn("save_state", cemu["capabilities"])
         self.assertNotIn("load_state", cemu["capabilities"])
 
+    def test_retroarch_does_not_expose_unusable_keyboard_menu(self):
+        store = ProfileStore(ROOT / "defaults" / "emulators")
+        store.load()
+        retroarch = store.get("retroarch")
+        self.assertIsNotNone(retroarch)
+        assert retroarch is not None
+        self.assertNotIn("emulator_menu", retroarch["capabilities"])
+        self.assertNotIn("emulator_menu", retroarch["actions"])
+
     def test_rejects_incomplete_profile(self):
         with tempfile.TemporaryDirectory() as directory:
             Path(directory, "broken.json").write_text('{"id": "broken"}', encoding="utf-8")

@@ -8,7 +8,7 @@
   "default_slot": 0,
   "savestate_paths": ["saves/retroarch/states"],
   "savestate_patterns": ["{stem}.state*"],
-  "capabilities": ["save_state", "load_state", "slot_previous", "slot_next", "fast_forward", "pause", "rewind", "previous_disc", "next_disc", "screenshot", "emulator_menu", "fullscreen", "quit"],
+  "capabilities": ["save_state", "load_state", "slot_previous", "slot_next", "fast_forward", "pause", "rewind", "previous_disc", "next_disc", "screenshot", "fullscreen", "quit"],
   "actions": {
     "save_state": {"label": "Save State", "method": "hotkey", "keys": ["f2"]},
     "load_state": {"label": "Load State", "method": "hotkey", "keys": ["f4"]},
@@ -20,7 +20,6 @@
     "previous_disc": {"label": "Previous Disc", "method": "hotkey", "keys": ["leftshift", "d"]},
     "next_disc": {"label": "Next Disc", "method": "hotkey", "keys": ["d"]},
     "screenshot": {"label": "Screenshot", "method": "hotkey", "keys": ["f8"]},
-    "emulator_menu": {"label": "RetroArch Menu", "method": "hotkey", "keys": ["f1"]},
     "fullscreen": {"label": "Fullscreen", "method": "hotkey", "keys": ["f"]},
     "quit": {"label": "Quit Emulator", "method": "hotkey", "keys": ["esc"]}
   }
