@@ -112,6 +112,14 @@ const groups = [
     { title: "Other", actions: ["screenshot", "emulator_menu"] },
     { title: "Session", actions: ["quit"] },
 ];
+function stateTimestamp(timestamp) {
+    const date = new Date(timestamp * 1000);
+    const today = new Date();
+    const sameDay = date.toDateString() === today.toDateString();
+    return sameDay
+        ? date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+        : date.toLocaleDateString([], { month: "short", day: "numeric" });
+}
 function EmulatorActions({ session, busyAction, onAction }) {
     const supported = new Set(session.capabilities);
     const hasSlots = supported.has("slot_previous") && supported.has("slot_next");
@@ -119,7 +127,7 @@ function EmulatorActions({ session, busyAction, onAction }) {
             const actions = group.actions.filter((action) => supported.has(action) && session.actions[action]);
             if (actions.length === 0)
                 return null;
-            return (SP_JSX.jsxs(DFL.PanelSection, { title: group.title, children: [group.title === "Save States" && hasSlots && (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: { width: "100%", textAlign: "center", opacity: 0.8 }, children: ["Current slot: ", SP_JSX.jsx("b", { children: session.slot })] }) })), actions.map((action) => {
+            return (SP_JSX.jsxs(DFL.PanelSection, { title: group.title, children: [group.title === "Save States" && hasSlots && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: { width: "100%", textAlign: "center", opacity: 0.8 }, children: ["Current slot: ", SP_JSX.jsx("b", { children: session.slot })] }) }), session.savestates.slice(0, 5).map((state) => (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: { width: "100%", display: "flex", justifyContent: "space-between", opacity: 0.68, fontSize: "12px" }, children: [SP_JSX.jsx("span", { children: state.slot === null ? "State" : `Slot ${state.slot}` }), SP_JSX.jsx("span", { children: stateTimestamp(state.modified_at) })] }) }, state.path)))] })), actions.map((action) => {
                         const definition = session.actions[action];
                         const active = session.toggles[action];
                         return (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: busyAction !== null, onClick: () => void onAction(action), children: busyAction === action ? "Working…" : `${definition.label}${active ? " — ON" : ""}` }) }, action));

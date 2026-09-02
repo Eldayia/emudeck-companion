@@ -15,6 +15,16 @@ interface Props {
   busyAction: string | null;
   onAction: (action: string) => Promise<void>;
 }
+
+function stateTimestamp(timestamp: number): string {
+  const date = new Date(timestamp * 1000);
+  const today = new Date();
+  const sameDay = date.toDateString() === today.toDateString();
+  return sameDay
+    ? date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
+    : date.toLocaleDateString([], { month: "short", day: "numeric" });
+}
+
 export function EmulatorActions({ session, busyAction, onAction }: Props) {
   const supported = new Set(session.capabilities);
   const hasSlots = supported.has("slot_previous") && supported.has("slot_next");
@@ -27,11 +37,21 @@ export function EmulatorActions({ session, busyAction, onAction }: Props) {
         return (
           <PanelSection title={group.title} key={group.title}>
             {group.title === "Save States" && hasSlots && (
-              <PanelSectionRow>
-                <div style={{ width: "100%", textAlign: "center", opacity: 0.8 }}>
-                  Current slot: <b>{session.slot}</b>
-                </div>
-              </PanelSectionRow>
+              <>
+                <PanelSectionRow>
+                  <div style={{ width: "100%", textAlign: "center", opacity: 0.8 }}>
+                    Current slot: <b>{session.slot}</b>
+                  </div>
+                </PanelSectionRow>
+                {session.savestates.slice(0, 5).map((state) => (
+                  <PanelSectionRow key={state.path}>
+                    <div style={{ width: "100%", display: "flex", justifyContent: "space-between", opacity: 0.68, fontSize: "12px" }}>
+                      <span>{state.slot === null ? "State" : `Slot ${state.slot}`}</span>
+                      <span>{stateTimestamp(state.modified_at)}</span>
+                    </div>
+                  </PanelSectionRow>
+                ))}
+              </>
             )}
             {actions.map((action) => {
               const definition = session.actions[action];

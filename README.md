@@ -17,6 +17,8 @@ Version 0.2 includes:
 - internal, `/run/media`, and home-mounted EmuDeck storage discovery;
 - cached ES-DE `gamelist.xml` metadata and scraped cover lookup;
 - `.m3u` multidisc discovery with disc actions hidden for single-disc games;
+- active-ROM savestate discovery with slot and modification time where filenames
+  can be matched safely;
 - 250 ms protection against accidental double actions;
 - controller-friendly Decky controls with no pointer-only interaction.
 
@@ -61,6 +63,7 @@ EmuDeck configuration are modified.
 - `companion_game_detection.py`: ROM extraction and display name fallback.
 - `companion_esde.py`: cached gamelist metadata and scraped-media lookup.
 - `companion_multidisc.py`: M3U playlist discovery.
+- `companion_savestates.py`: conservative per-ROM savestate inventory.
 - `companion_action_engine.py`: capability checks, debounce, and action dispatch.
 - `companion_input_backends.py`: virtual input abstraction.
 - `defaults/emulators/`: independently versioned emulator profiles, copied to

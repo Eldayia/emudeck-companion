@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import html
 import re
 from pathlib import Path
 from typing import Any
@@ -18,6 +17,22 @@ MEDIA_KINDS = {
 }
 MEDIA_EXTENSIONS = (".png", ".jpg", ".jpeg", ".webp", ".mp4", ".mkv", ".pdf")
 GAME_PATTERN = re.compile(r"<game(?:\s[^>]*)?>(.*?)</game\s*>", re.IGNORECASE | re.DOTALL)
+ENTITY_PATTERN = re.compile(r"&(?:#(?P<number>\d+)|#x(?P<hex>[0-9a-f]+)|(?P<name>amp|lt|gt|quot|apos));", re.IGNORECASE)
+NAMED_ENTITIES = {"amp": "&", "lt": "<", "gt": ">", "quot": '"', "apos": "'"}
+
+
+def _unescape(value: str) -> str:
+    def replace(match: re.Match[str]) -> str:
+        try:
+            if match.group("number"):
+                return chr(int(match.group("number")))
+            if match.group("hex"):
+                return chr(int(match.group("hex"), 16))
+        except (ValueError, OverflowError):
+            return match.group(0)
+        return NAMED_ENTITIES.get((match.group("name") or "").casefold(), match.group(0))
+
+    return ENTITY_PATTERN.sub(replace, value)
 
 
 def _element_text(block: str, tag: str) -> str | None:
@@ -31,7 +46,7 @@ def _element_text(block: str, tag: str) -> str | None:
     value = match.group(1).strip()
     if value.startswith("<![CDATA[") and value.endswith("]]>"):
         value = value[9:-3]
-    return html.unescape(value.strip())
+    return _unescape(value.strip())
 
 
 def _normal(path: Path) -> str:

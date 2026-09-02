@@ -6,6 +6,8 @@
   "processes": ["pcsx2-qt", "PCSX2", "pcsx2.exe"],
   "rom_extensions": ["bin", "chd", "cso", "cue", "elf", "iso", "m3u"],
   "default_slot": 0,
+  "savestate_paths": ["saves/pcsx2/states"],
+  "savestate_patterns": ["{stem}*.p2s"],
   "capabilities": ["save_state", "load_state", "slot_previous", "slot_next", "fast_forward", "pause", "fullscreen", "screenshot", "quit"],
   "actions": {
     "save_state": {"label": "Save State", "method": "hotkey", "keys": ["f1"]},

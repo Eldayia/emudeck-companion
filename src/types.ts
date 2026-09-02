@@ -20,6 +20,12 @@ export interface EmulatorSession {
   metadata: Record<string, string>;
   discs: string[];
   current_disc: number | null;
+  savestates: Array<{
+    slot: number | null;
+    path: string;
+    modified_at: number;
+    size: number;
+  }>;
 }
 
 export interface ActionResult {

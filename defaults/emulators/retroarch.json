@@ -6,6 +6,8 @@
   "processes": ["retroarch", "retroarch.exe"],
   "rom_extensions": ["a26", "a78", "bin", "chd", "cue", "gb", "gba", "gbc", "gen", "gg", "iso", "m3u", "md", "nes", "pbp", "sfc", "smc", "zip"],
   "default_slot": 0,
+  "savestate_paths": ["saves/retroarch/states"],
+  "savestate_patterns": ["{stem}.state*"],
   "capabilities": ["save_state", "load_state", "slot_previous", "slot_next", "fast_forward", "pause", "rewind", "previous_disc", "next_disc", "screenshot", "emulator_menu", "fullscreen", "quit"],
   "actions": {
     "save_state": {"label": "Save State", "method": "hotkey", "keys": ["f2"]},

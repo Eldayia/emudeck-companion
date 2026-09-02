@@ -6,6 +6,8 @@
   "processes": ["dolphin-emu", "dolphin-emu-wrapper", "Dolphin.exe"],
   "rom_extensions": ["ciso", "dol", "elf", "gcm", "iso", "m3u", "rvz", "wad", "wbfs"],
   "default_slot": 1,
+  "savestate_paths": ["saves/dolphin/StateSaves"],
+  "savestate_patterns": ["{stem}*.s??"],
   "capabilities": ["save_state", "load_state", "slot_previous", "slot_next", "fast_forward", "pause", "previous_disc", "next_disc", "fullscreen", "quit"],
   "actions": {
     "save_state": {"label": "Save State", "method": "hotkey", "keys": ["leftshift", "f{slot}"]},
