@@ -76,6 +76,11 @@ This verifies the destination; it does not protect the receiver from other clien
 
 ## Steam Deck test checklist
 
+User-reported validation on 2026-09-02, version 0.16.0: **Save State**, **Load State**
+and **opening the RetroArch menu** work. Menu navigation, pause/resume, slot changes,
+fast-forward, screenshots and disc controls are not yet confirmed by that report.
+The report does not establish compatibility with every core or controller.
+
 Automated tests cover parsing, endpoint ownership, protocol validation, loopback
 transport against a fake server, single-send/no-retry dispatch, UI typechecking,
 settings integration, config preservation and backup/error paths. They do not

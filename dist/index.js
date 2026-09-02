@@ -187,6 +187,22 @@ function Documents({ documents }) {
     return (SP_JSX.jsx(DFL.PanelSection, { title: "Documents", children: documents.map((document) => (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", description: document.format.toUpperCase(), disabled: opening !== null, onClick: () => void openDocument(document.id), children: opening === document.id ? "Opening…" : document.title }) }, document.id))) }));
 }
 
+const quickPriority = [
+    "save_state", "load_state", "pause", "emulator_menu", "fast_forward",
+    "swap_screen", "screen_layout", "fullscreen", "quit",
+];
+function quickActions(session, favorites) {
+    // capabilities already excludes actions hidden by the user's per-game settings.
+    const supported = (action) => session.capabilities.includes(action) && Boolean(session.actions[action]);
+    const selected = [...new Set(favorites)].filter(supported).slice(0, 4);
+    if (selected.length)
+        return selected;
+    return [...new Set([...quickPriority, ...session.capabilities])].filter(supported).slice(0, 4);
+}
+function hasSlotControls(session) {
+    return ["slot_previous", "slot_next"].every((action) => session.capabilities.includes(action) && Boolean(session.actions[action]));
+}
+
 const groups = [
     { title: "Save States", actions: ["save_state", "load_state"] },
     { title: "Emulation", actions: ["pause", "fast_forward", "rewind"] },
@@ -204,16 +220,20 @@ function stateTimestamp(timestamp) {
         ? date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
         : date.toLocaleDateString([], { month: "short", day: "numeric" });
 }
-function EmulatorActions({ session, favorites, busyAction, onAction }) {
+function EmulatorActions({ session, favorites, compact, busyAction, onAction }) {
+    const [expanded, setExpanded] = SP_REACT.useState(false);
+    SP_REACT.useEffect(() => setExpanded(false), [compact]);
     const supported = new Set(session.capabilities);
-    const hasSlots = supported.has("slot_previous") && supported.has("slot_next");
+    const hasSlots = hasSlotControls(session);
     const favoriteActions = favorites.filter((action) => supported.has(action) && session.actions[action]);
+    const quick = quickActions(session, favorites);
+    const collapsed = compact && !expanded;
     const actionButton = (action) => {
         const definition = session.actions[action];
         const active = session.toggles[action];
         return (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: busyAction !== null, onClick: () => void onAction(action), children: busyAction === action ? "Working…" : `${definition.label}${active ? " — ON" : ""}` }) }, action));
     };
-    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [favoriteActions.length > 0 && (SP_JSX.jsx(DFL.PanelSection, { title: "Favorites", children: favoriteActions.map(actionButton) })), groups.map((group) => {
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [collapsed && quick.length > 0 && (SP_JSX.jsxs(DFL.PanelSection, { title: "Quick Actions", children: [quick.map(actionButton), hasSlots && quick.some((action) => action === "save_state" || action === "load_state") && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: { width: "100%", textAlign: "center", opacity: 0.8 }, children: [session.actions.save_state?.method === "retroarch_udp" ? "Estimated slot" : "Current slot", ": ", SP_JSX.jsx("b", { children: session.slot })] }) }), !quick.includes("slot_previous") && actionButton("slot_previous"), !quick.includes("slot_next") && actionButton("slot_next")] }))] })), compact && (SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: busyAction !== null, onClick: () => setExpanded((value) => !value), children: expanded ? "Show Quick Actions" : "Show All Actions" }) }) })), !collapsed && favoriteActions.length > 0 && (SP_JSX.jsx(DFL.PanelSection, { title: "Favorites", children: favoriteActions.map(actionButton) })), !collapsed && groups.map((group) => {
                 const actions = group.actions.filter((action) => supported.has(action) && session.actions[action]);
                 if (actions.length === 0)
                     return null;
@@ -371,7 +391,7 @@ function Settings({ settings, session, onChange }) {
             : current.filter((item) => item !== action);
         return saveGameOverride({ ...gameOverride, favorites: selected });
     };
-    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(RetroArchSetup, {}), SP_JSX.jsxs(DFL.PanelSection, { title: "Settings", children: [SP_JSX.jsx(DFL.ToggleField, { label: "Action notifications", description: "Show a notification after successful actions", checked: settings.notifications, onChange: (checked) => void onChange({ notifications: checked }) }), SP_JSX.jsx(DFL.ToggleField, { label: "Show platform", checked: settings.show_platform, onChange: (checked) => void onChange({ show_platform: checked }) }), SP_JSX.jsx(DFL.ToggleField, { label: "Show emulator", checked: settings.show_emulator, onChange: (checked) => void onChange({ show_emulator: checked }) }), SP_JSX.jsx(DFL.ToggleField, { label: "Show session time", checked: settings.show_session_time, onChange: (checked) => void onChange({ show_session_time: checked }) }), SP_JSX.jsx(DFL.SliderField, { label: "Detection interval", description: "How often Companion checks the active emulator", value: settings.detection_interval_ms, min: 1000, max: 5000, step: 250, showValue: true, valueSuffix: " ms", onChange: (value) => void onChange({ detection_interval_ms: value }) })] }), session && availableActions.length > 0 && (SP_JSX.jsx(DFL.PanelSection, { title: `Favorites — ${session.emulator_name}`, children: availableActions.map((action) => {
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(RetroArchSetup, {}), SP_JSX.jsxs(DFL.PanelSection, { title: "Settings", children: [SP_JSX.jsx(DFL.ToggleField, { label: "Compact actions", description: "Show up to four favorites or common actions first. Show All Actions reveals the full list.", checked: settings.compact_actions, onChange: (checked) => void onChange({ compact_actions: checked }) }), SP_JSX.jsx(DFL.ToggleField, { label: "Action notifications", description: "Show a notification after successful actions", checked: settings.notifications, onChange: (checked) => void onChange({ notifications: checked }) }), SP_JSX.jsx(DFL.ToggleField, { label: "Show platform", checked: settings.show_platform, onChange: (checked) => void onChange({ show_platform: checked }) }), SP_JSX.jsx(DFL.ToggleField, { label: "Show emulator", checked: settings.show_emulator, onChange: (checked) => void onChange({ show_emulator: checked }) }), SP_JSX.jsx(DFL.ToggleField, { label: "Show session time", checked: settings.show_session_time, onChange: (checked) => void onChange({ show_session_time: checked }) }), SP_JSX.jsx(DFL.SliderField, { label: "Detection interval", description: "How often Companion checks the active emulator", value: settings.detection_interval_ms, min: 1000, max: 5000, step: 250, showValue: true, valueSuffix: " ms", onChange: (value) => void onChange({ detection_interval_ms: value }) })] }), session && availableActions.length > 0 && (SP_JSX.jsx(DFL.PanelSection, { title: `Favorites — ${session.emulator_name}`, children: availableActions.map((action) => {
                     const checked = emulatorFavorites.includes(action);
                     return (SP_JSX.jsx(DFL.ToggleField, { label: session.actions[action].label, description: checked ? "Shown in Favorites" : "", checked: checked, disabled: !checked && emulatorFavorites.length >= 4, onChange: (value) => void toggleFavorite(action, value) }, action));
                 }) })), session?.game_key && availableActions.length > 0 && (SP_JSX.jsxs(DFL.PanelSection, { title: `Game Overrides — ${session.game ?? "Current Game"}`, children: [SP_JSX.jsx(DFL.ToggleField, { label: "Use game-specific favorites", description: gameFavorites === undefined ? `Inherited from ${session.emulator_name}` : "Overrides emulator favorites", checked: gameFavorites !== undefined, onChange: (enabled) => void useGameFavorites(enabled) }), availableActions.map((action) => (SP_JSX.jsx(DFL.ToggleField, { label: session.actions[action].label, description: "Show this action for this game", checked: !hiddenActions.includes(action), onChange: (visible) => void toggleGameAction(action, visible) }, action))), gameOverride !== undefined && (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => void onChange({
@@ -807,7 +827,7 @@ function Content() {
     if (!loaded) {
         return SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.PanelSectionRow, { children: "Detecting active emulator\u2026" }) });
     }
-    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [session ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(GameHeader, { session: session, artwork: artwork, settings: settings }) }) }), SP_JSX.jsx(EmulatorActions, { session: session, favorites: activeFavorites, busyAction: busyAction, onAction: onAction }), SP_JSX.jsx(Documents, { documents: session.documents }), SP_JSX.jsx(Hotkeys, { session: session })] })) : (SP_JSX.jsxs(DFL.PanelSection, { title: "EmuDeck Companion", children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: { width: "100%", padding: "8px 0", opacity: 0.72 }, children: "No active emulation session" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => void manualRefresh(), children: "Refresh Detection" }) })] })), SP_JSX.jsxs(DFL.PanelSection, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setShowSettings((value) => !value), children: showSettings ? "Hide Settings" : "Show Settings" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setShowDiagnostics((value) => !value), children: showDiagnostics ? "Hide Diagnostics" : "Show Diagnostics" }) })] }), showSettings && settings && (SP_JSX.jsx(Settings, { settings: settings, session: session, onChange: saveSettings })), showDiagnostics && diagnostics && SP_JSX.jsx(Diagnostics, { data: diagnostics, onRefresh: manualRefresh })] }));
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [session ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(GameHeader, { session: session, artwork: artwork, settings: settings }) }) }), SP_JSX.jsx(EmulatorActions, { session: session, favorites: activeFavorites, compact: settings?.compact_actions ?? false, busyAction: busyAction, onAction: onAction }, `${session.emulator}:${session.pid}:${session.started_at}:${session.rom ?? ""}`), SP_JSX.jsx(Documents, { documents: session.documents }), SP_JSX.jsx(Hotkeys, { session: session })] })) : (SP_JSX.jsxs(DFL.PanelSection, { title: "EmuDeck Companion", children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: { width: "100%", padding: "8px 0", opacity: 0.72 }, children: "No active emulation session" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => void manualRefresh(), children: "Refresh Detection" }) })] })), SP_JSX.jsxs(DFL.PanelSection, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setShowSettings((value) => !value), children: showSettings ? "Hide Settings" : "Show Settings" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setShowDiagnostics((value) => !value), children: showDiagnostics ? "Hide Diagnostics" : "Show Diagnostics" }) })] }), showSettings && settings && (SP_JSX.jsx(Settings, { settings: settings, session: session, onChange: saveSettings })), showDiagnostics && diagnostics && SP_JSX.jsx(Diagnostics, { data: diagnostics, onRefresh: manualRefresh })] }));
 }
 var index = definePlugin(() => ({
     name: "EmuDeck Companion",

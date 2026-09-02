@@ -29,6 +29,7 @@ class PluginIntegrationTests(unittest.IsolatedAsyncioTestCase):
                 plugin_module = importlib.import_module("main")
                 plugin = plugin_module.Plugin()
                 await plugin._main()
+                self.assertFalse((await plugin.get_settings())["compact_actions"])
                 diagnostics = await plugin.get_diagnostics()
                 self.assertIsNone(diagnostics["session"])
                 self.assertTrue(diagnostics["document_server"]["running"])
@@ -98,6 +99,14 @@ class PluginIntegrationTests(unittest.IsolatedAsyncioTestCase):
                 self.assertEqual(report["input_backend"], "SteamClient.Input")
                 self.assertTrue(report["document_server"]["running"])
                 self.assertFalse(Path(directory, "diagnostics.tmp").exists())
+                compact = await plugin.update_settings({"compact_actions": True})
+                self.assertTrue(compact["compact_actions"])
+                self.assertTrue(plugin._load_settings()["compact_actions"])
+                self.assertEqual(compact["favorites"], settings["favorites"])
+                self.assertEqual(compact["game_overrides"], settings["game_overrides"])
+                for invalid_compact in ("true", "false", 1, None, [], {}):
+                    self.assertFalse(plugin._validated_settings({"compact_actions": invalid_compact})["compact_actions"])
+                self.assertFalse((await plugin.update_settings({"compact_actions": False}))["compact_actions"])
                 native_settings = await plugin.update_settings({
                     "favorites": {"retroarch": ["emulator_menu", "menu_confirm", "invalid"]},
                     "game_overrides": {"retroarch:game.n64": {

@@ -1,4 +1,6 @@
 import { ButtonItem, PanelSection, PanelSectionRow } from "@decky/ui";
+import { useEffect, useState } from "react";
+import { hasSlotControls, quickActions } from "../actionLayout";
 import type { EmulatorSession } from "../types";
 
 const groups: Array<{ title: string; actions: string[] }> = [
@@ -14,6 +16,7 @@ const groups: Array<{ title: string; actions: string[] }> = [
 interface Props {
   session: EmulatorSession;
   favorites: string[];
+  compact: boolean;
   busyAction: string | null;
   onAction: (action: string) => Promise<void>;
 }
@@ -27,10 +30,14 @@ function stateTimestamp(timestamp: number): string {
     : date.toLocaleDateString([], { month: "short", day: "numeric" });
 }
 
-export function EmulatorActions({ session, favorites, busyAction, onAction }: Props) {
+export function EmulatorActions({ session, favorites, compact, busyAction, onAction }: Props) {
+  const [expanded, setExpanded] = useState(false);
+  useEffect(() => setExpanded(false), [compact]);
   const supported = new Set(session.capabilities);
-  const hasSlots = supported.has("slot_previous") && supported.has("slot_next");
+  const hasSlots = hasSlotControls(session);
   const favoriteActions = favorites.filter((action) => supported.has(action) && session.actions[action]);
+  const quick = quickActions(session, favorites);
+  const collapsed = compact && !expanded;
 
   const actionButton = (action: string) => {
     const definition = session.actions[action];
@@ -50,12 +57,37 @@ export function EmulatorActions({ session, favorites, busyAction, onAction }: Pr
 
   return (
     <>
-      {favoriteActions.length > 0 && (
+      {collapsed && quick.length > 0 && (
+        <PanelSection title="Quick Actions">
+          {quick.map(actionButton)}
+          {hasSlots && quick.some((action) => action === "save_state" || action === "load_state") && (
+            <>
+              <PanelSectionRow>
+                <div style={{ width: "100%", textAlign: "center", opacity: 0.8 }}>
+                  {session.actions.save_state?.method === "retroarch_udp" ? "Estimated slot" : "Current slot"}: <b>{session.slot}</b>
+                </div>
+              </PanelSectionRow>
+              {!quick.includes("slot_previous") && actionButton("slot_previous")}
+              {!quick.includes("slot_next") && actionButton("slot_next")}
+            </>
+          )}
+        </PanelSection>
+      )}
+      {compact && (
+        <PanelSection>
+          <PanelSectionRow>
+            <ButtonItem layout="below" disabled={busyAction !== null} onClick={() => setExpanded((value) => !value)}>
+              {expanded ? "Show Quick Actions" : "Show All Actions"}
+            </ButtonItem>
+          </PanelSectionRow>
+        </PanelSection>
+      )}
+      {!collapsed && favoriteActions.length > 0 && (
         <PanelSection title="Favorites">
           {favoriteActions.map(actionButton)}
         </PanelSection>
       )}
-      {groups.map((group) => {
+      {!collapsed && groups.map((group) => {
         const actions = group.actions.filter((action) => supported.has(action) && session.actions[action]);
         if (actions.length === 0) return null;
         return (

@@ -124,6 +124,7 @@ class Plugin:
     def _load_settings(self) -> dict[str, Any]:
         defaults = {
             "settings_version": 2,
+            "compact_actions": False,
             "detection_interval_ms": 1500,
             "show_platform": True,
             "show_emulator": True,
@@ -197,6 +198,7 @@ class Plugin:
                     game_overrides[key] = normalized
         return {
             "settings_version": 2,
+            "compact_actions": value.get("compact_actions") is True,
             "detection_interval_ms": min(5000, max(1000, interval)),
             "show_platform": value.get("show_platform") is not False,
             "show_emulator": value.get("show_emulator") is not False,

@@ -148,8 +148,10 @@ function Content() {
             </PanelSectionRow>
           </PanelSection>
           <EmulatorActions
+            key={`${session.emulator}:${session.pid}:${session.started_at}:${session.rom ?? ""}`}
             session={session}
             favorites={activeFavorites}
+            compact={settings?.compact_actions ?? false}
             busyAction={busyAction}
             onAction={onAction}
           />

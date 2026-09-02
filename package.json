@@ -1,13 +1,14 @@
 {
   "name": "emudeck-companion",
-  "version": "0.16.0",
+  "version": "0.17.0",
   "description": "Context-aware emulator controls for EmuDeck in Decky's Quick Access Menu",
   "type": "module",
   "scripts": {
     "build": "rollup -c",
     "watch": "rollup -c -w",
     "typecheck": "tsc --noEmit",
-    "test": "python -m unittest discover -s tests -v"
+    "test": "python -m unittest discover -s tests -v && pnpm test:frontend",
+    "test:frontend": "node tests/test_action_layout.mjs"
   },
   "license": "BSD-3-Clause",
   "devDependencies": {

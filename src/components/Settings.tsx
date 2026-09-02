@@ -75,6 +75,12 @@ export function Settings({ settings, session, onChange }: Props) {
       <RetroArchSetup />
       <PanelSection title="Settings">
         <ToggleField
+          label="Compact actions"
+          description="Show up to four favorites or common actions first. Show All Actions reveals the full list."
+          checked={settings.compact_actions}
+          onChange={(checked) => void onChange({ compact_actions: checked })}
+        />
+        <ToggleField
           label="Action notifications"
           description="Show a notification after successful actions"
           checked={settings.notifications}

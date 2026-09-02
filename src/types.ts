@@ -72,6 +72,7 @@ export interface EmuDeckStatus {
 }
 
 export interface CompanionSettings {
+  compact_actions: boolean;
   settings_version: number;
   detection_interval_ms: number;
   show_platform: boolean;
