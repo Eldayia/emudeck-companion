@@ -30,7 +30,6 @@ export interface EmulatorSession {
     id: string;
     title: string;
     path: string;
-    url: string;
     format: string;
     size: number;
   }>;

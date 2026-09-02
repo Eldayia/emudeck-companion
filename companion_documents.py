@@ -37,7 +37,6 @@ class DocumentIndex:
             "id": hashlib.sha256(str(resolved).encode("utf-8")).hexdigest()[:16],
             "title": label,
             "path": str(resolved),
-            "url": resolved.as_uri(),
             "format": resolved.suffix.casefold().lstrip("."),
             "size": stat.st_size,
         }

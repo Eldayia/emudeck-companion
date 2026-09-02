@@ -19,6 +19,7 @@ if _plugin_import_root not in sys.path:
 
 from companion_action_engine import ActionEngine
 from companion_diagnostics import build_diagnostics
+from companion_document_server import DocumentServer
 from companion_documents import DocumentIndex
 from companion_emudeck import detect_emudeck
 from companion_esde import ESDEMetadataIndex
@@ -41,6 +42,8 @@ class Plugin:
         self.metadata_index = self._build_metadata_index()
         self.savestate_index = self._build_savestate_index()
         self.document_index = self._build_document_index()
+        self.document_server = DocumentServer()
+        self.document_server.start()
         self.session_manager = SessionManager(
             self.profile_store,
             metadata_provider=self.metadata_index.lookup,
@@ -73,10 +76,12 @@ class Plugin:
 
     async def _unload(self) -> None:
         await self.action_engine.release_all()
+        self.document_server.stop()
         decky.logger.info("EmuDeck Companion unloaded")
 
     async def _uninstall(self) -> None:
         await self.action_engine.release_all()
+        self.document_server.stop()
 
     def _load_settings(self) -> dict[str, Any]:
         defaults = {
@@ -163,6 +168,19 @@ class Plugin:
                 return f"data:{mime};base64,{base64.b64encode(path.read_bytes()).decode('ascii')}"
             except OSError:
                 return None
+
+    async def get_document_url(self, document_id: str) -> str | None:
+        async with self._lock:
+            session = self.session_manager.refresh()
+            if session is None:
+                return None
+            document = next(
+                (item for item in session.documents if item.get("id") == document_id),
+                None,
+            )
+            if document is None:
+                return None
+            return self.document_server.url_for(Path(document["path"]))
 
     async def execute_action(self, action: str) -> dict[str, Any]:
         async with self._lock:

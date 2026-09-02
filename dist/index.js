@@ -85,6 +85,7 @@ function FaGamepad (props) {
 
 const getCurrentSession = callable("get_current_session");
 const getArtwork = callable("get_artwork");
+const getDocumentUrl = callable("get_document_url");
 const executeAction = callable("execute_action");
 const refreshDetection = callable("refresh_detection");
 const getDiagnostics = callable("get_diagnostics");
@@ -107,18 +108,28 @@ function Diagnostics({ data, onRefresh }) {
 }
 
 function Documents({ documents }) {
+    const [opening, setOpening] = SP_REACT.useState(null);
     if (documents.length === 0)
         return null;
-    const openDocument = (url) => {
+    const openDocument = async (id) => {
+        if (opening !== null)
+            return;
+        setOpening(id);
         try {
+            const url = await getDocumentUrl(id);
+            if (!url)
+                throw new Error("The document is no longer available");
             DFL.Navigation.NavigateToExternalWeb(url);
             DFL.Navigation.CloseSideMenus();
         }
         catch (error) {
             toaster.toast({ title: "Cannot open document", body: String(error) });
         }
+        finally {
+            setOpening(null);
+        }
     };
-    return (SP_JSX.jsx(DFL.PanelSection, { title: "Documents", children: documents.map((document) => (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", description: document.format.toUpperCase(), onClick: () => openDocument(document.url), children: document.title }) }, document.id))) }));
+    return (SP_JSX.jsx(DFL.PanelSection, { title: "Documents", children: documents.map((document) => (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", description: document.format.toUpperCase(), disabled: opening !== null, onClick: () => void openDocument(document.id), children: opening === document.id ? "Opening…" : document.title }) }, document.id))) }));
 }
 
 const groups = [

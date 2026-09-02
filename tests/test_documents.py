@@ -24,7 +24,7 @@ class DocumentIndexTests(unittest.TestCase):
             result = DocumentIndex(root, rom_root).lookup(str(rom), {"manual": str(manual)})
 
             self.assertEqual([item["title"] for item in result], ["Manual", "Controls"])
-            self.assertTrue(result[0]["url"].startswith("file:"))
+            self.assertNotIn("url", result[0])
             self.assertEqual(result[1]["format"], "md")
 
     def test_ignores_missing_unsupported_and_duplicate_documents(self):

@@ -1,16 +1,25 @@
 import { ButtonItem, Navigation, PanelSection, PanelSectionRow } from "@decky/ui";
 import { toaster } from "@decky/api";
+import { useState } from "react";
+import { getDocumentUrl } from "../api/backend";
 import type { EmulatorSession } from "../types";
 
 export function Documents({ documents }: { documents: EmulatorSession["documents"] }) {
+  const [opening, setOpening] = useState<string | null>(null);
   if (documents.length === 0) return null;
 
-  const openDocument = (url: string) => {
+  const openDocument = async (id: string) => {
+    if (opening !== null) return;
+    setOpening(id);
     try {
+      const url = await getDocumentUrl(id);
+      if (!url) throw new Error("The document is no longer available");
       Navigation.NavigateToExternalWeb(url);
       Navigation.CloseSideMenus();
     } catch (error) {
       toaster.toast({ title: "Cannot open document", body: String(error) });
+    } finally {
+      setOpening(null);
     }
   };
 
@@ -21,9 +30,10 @@ export function Documents({ documents }: { documents: EmulatorSession["documents
           <ButtonItem
             layout="below"
             description={document.format.toUpperCase()}
-            onClick={() => openDocument(document.url)}
+            disabled={opening !== null}
+            onClick={() => void openDocument(document.id)}
           >
-            {document.title}
+            {opening === document.id ? "Opening…" : document.title}
           </ButtonItem>
         </PanelSectionRow>
       ))}

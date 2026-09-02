@@ -3,6 +3,7 @@ import type { ActionResult, CompanionSettings, DiagnosticsData, EmulatorSession 
 
 export const getCurrentSession = callable<[], EmulatorSession | null>("get_current_session");
 export const getArtwork = callable<[], string | null>("get_artwork");
+export const getDocumentUrl = callable<[documentId: string], string | null>("get_document_url");
 export const executeAction = callable<[action: string], ActionResult>("execute_action");
 export const refreshDetection = callable<[], EmulatorSession | null>("refresh_detection");
 export const getDiagnostics = callable<[], DiagnosticsData>("get_diagnostics");
