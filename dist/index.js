@@ -187,6 +187,48 @@ function GameHeader({ session, artwork, settings, }) {
                     .filter(Boolean).join(" • ") }))] }));
 }
 
+const keyLabels = {
+    leftalt: "Alt",
+    leftctrl: "Ctrl",
+    leftshift: "Shift",
+    enter: "Enter",
+    esc: "Esc",
+    tab: "Tab",
+    space: "Space",
+    insert: "Insert",
+    home: "Home",
+    pageup: "Page Up",
+    end: "End",
+};
+function formatKey(key, slot) {
+    const resolved = key.replace("{slot}", slot.toString()).toLowerCase();
+    if (keyLabels[resolved])
+        return keyLabels[resolved];
+    if (/^f\d{1,2}$/.test(resolved))
+        return resolved.toUpperCase();
+    if (resolved.length === 1)
+        return resolved.toUpperCase();
+    return resolved;
+}
+function Hotkeys({ session }) {
+    const [expanded, setExpanded] = SP_REACT.useState(false);
+    const entries = session.capabilities.flatMap((action) => {
+        const definition = session.actions[action];
+        if (definition?.method !== "hotkey" || !definition.keys?.length)
+            return [];
+        return [{ action, definition }];
+    });
+    if (entries.length === 0)
+        return null;
+    return (SP_JSX.jsxs(DFL.PanelSection, { title: "Hotkeys", children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setExpanded((value) => !value), children: expanded ? "Hide Keyboard Shortcuts" : "Show Keyboard Shortcuts" }) }), expanded && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: { width: "100%", opacity: 0.58, fontSize: "12px" }, children: ["Keyboard shortcuts sent by Companion to ", session.emulator_name] }) }), entries.map(({ action, definition }) => (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: {
+                                width: "100%",
+                                display: "flex",
+                                alignItems: "center",
+                                justifyContent: "space-between",
+                                gap: "12px",
+                            }, children: [SP_JSX.jsx("span", { children: definition.label }), SP_JSX.jsx("span", { style: { opacity: 0.72, whiteSpace: "nowrap" }, children: definition.keys?.map((key) => formatKey(key, session.slot)).join(" + ") })] }) }, action)))] }))] }));
+}
+
 function Settings({ settings, session, onChange }) {
     const favorites = session ? (settings.favorites[session.emulator] ?? []) : [];
     const availableActions = session
@@ -596,7 +638,7 @@ function Content() {
     if (!loaded) {
         return SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.PanelSectionRow, { children: "Detecting active emulator\u2026" }) });
     }
-    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [session ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(GameHeader, { session: session, artwork: artwork, settings: settings }) }) }), SP_JSX.jsx(EmulatorActions, { session: session, favorites: settings?.favorites[session.emulator] ?? [], busyAction: busyAction, onAction: onAction }), SP_JSX.jsx(Documents, { documents: session.documents })] })) : (SP_JSX.jsxs(DFL.PanelSection, { title: "EmuDeck Companion", children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: { width: "100%", padding: "8px 0", opacity: 0.72 }, children: "No active emulation session" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => void manualRefresh(), children: "Refresh Detection" }) })] })), SP_JSX.jsxs(DFL.PanelSection, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setShowSettings((value) => !value), children: showSettings ? "Hide Settings" : "Show Settings" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setShowDiagnostics((value) => !value), children: showDiagnostics ? "Hide Diagnostics" : "Show Diagnostics" }) })] }), showSettings && settings && (SP_JSX.jsx(Settings, { settings: settings, session: session, onChange: saveSettings })), showDiagnostics && diagnostics && SP_JSX.jsx(Diagnostics, { data: diagnostics, onRefresh: manualRefresh })] }));
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [session ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(GameHeader, { session: session, artwork: artwork, settings: settings }) }) }), SP_JSX.jsx(EmulatorActions, { session: session, favorites: settings?.favorites[session.emulator] ?? [], busyAction: busyAction, onAction: onAction }), SP_JSX.jsx(Documents, { documents: session.documents }), SP_JSX.jsx(Hotkeys, { session: session })] })) : (SP_JSX.jsxs(DFL.PanelSection, { title: "EmuDeck Companion", children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: { width: "100%", padding: "8px 0", opacity: 0.72 }, children: "No active emulation session" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => void manualRefresh(), children: "Refresh Detection" }) })] })), SP_JSX.jsxs(DFL.PanelSection, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setShowSettings((value) => !value), children: showSettings ? "Hide Settings" : "Show Settings" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setShowDiagnostics((value) => !value), children: showDiagnostics ? "Hide Diagnostics" : "Show Diagnostics" }) })] }), showSettings && settings && (SP_JSX.jsx(Settings, { settings: settings, session: session, onChange: saveSettings })), showDiagnostics && diagnostics && SP_JSX.jsx(Diagnostics, { data: diagnostics, onRefresh: manualRefresh })] }));
 }
 var index = definePlugin(() => ({
     name: "EmuDeck Companion",

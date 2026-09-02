@@ -15,6 +15,7 @@ import { Diagnostics } from "./components/Diagnostics";
 import { Documents } from "./components/Documents";
 import { EmulatorActions } from "./components/EmulatorActions";
 import { GameHeader } from "./components/GameHeader";
+import { Hotkeys } from "./components/Hotkeys";
 import { Settings } from "./components/Settings";
 import { pressHotkeys } from "./hotkey";
 import type { CompanionSettings, DiagnosticsData, EmulatorSession } from "./types";
@@ -147,6 +148,7 @@ function Content() {
             onAction={onAction}
           />
           <Documents documents={session.documents} />
+          <Hotkeys session={session} />
         </>
       ) : (
         <PanelSection title="EmuDeck Companion">
