@@ -1,0 +1,44 @@
+export interface ActionDefinition {
+  label: string;
+  method: string;
+  keys?: string[];
+  mode?: "toggle" | "hold";
+}
+export interface EmulatorSession {
+  emulator: string;
+  emulator_name: string;
+  pid: number;
+  argv: string[];
+  rom: string | null;
+  game: string | null;
+  platform: string | null;
+  capabilities: string[];
+  actions: Record<string, ActionDefinition>;
+  started_at: number;
+  slot: number;
+  toggles: Record<string, boolean>;
+}
+
+export interface ActionResult {
+  ok: boolean;
+  action: string;
+  message: string;
+  slot: number | null;
+  active: boolean | null;
+}
+
+export interface EmuDeckStatus {
+  detected: boolean;
+  root: string | null;
+  esde_detected: boolean;
+  esde_root: string | null;
+}
+
+export interface DiagnosticsData {
+  timestamp: number;
+  system: string;
+  emudeck: EmuDeckStatus;
+  session: EmulatorSession | null;
+  input_backend: string;
+  last_action: ActionResult | null;
+}

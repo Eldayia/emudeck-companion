@@ -1,0 +1,61 @@
+# EmuDeck Companion
+
+EmuDeck Companion is a Decky Loader plugin that exposes context-aware controls
+for the emulator currently launched by EmuDeck, ES-DE, or Steam ROM Manager.
+It does not replace EmuDeck and does not require EmuDecky.
+
+## MVP status
+
+Version 0.1 includes:
+
+- automatic process and ROM detection through `/proc`;
+- data-driven profiles for Cemu, DuckStation, PCSX2, Dolphin, and RetroArch;
+- contextual QAM sections (unsupported actions are hidden);
+- save/load, slots, pause, fast-forward, display, disc, menu, screenshot, and
+  graceful quit actions where the profile supports them;
+- EmuDeck/ES-DE discovery and diagnostics;
+- 250 ms protection against accidental double actions;
+- controller-friendly Decky controls with no pointer-only interaction.
+
+This implementation is deliberately honest about action delivery. It tries
+`ydotool`, then Wayland `wtype`, then targeted X11 `xdotool`. If none is
+available, the UI reports an error instead of claiming that the emulator acted.
+The bundled hotkeys are baseline defaults and must be validated against the
+actual EmuDeck/emulator configuration before a store release. Steam Deck Gaming
+Mode hardware tests are still required.
+
+## Development
+
+Requirements: Node.js 16.14+, pnpm 9, and Python 3.10+.
+
+```sh
+pnpm install
+pnpm run typecheck
+pnpm run build
+python -m unittest discover -s tests -v
+```
+
+For Decky developer installation, build the frontend and copy the plugin folder
+to `~/homebrew/plugins/EmuDeck-Companion`. Decky loads `main.py`; the built
+frontend must be present as `dist/index.js`.
+
+Settings use Decky's current `DECKY_PLUGIN_SETTINGS_DIR`. No system files or
+EmuDeck configuration are modified.
+
+## Architecture
+
+- `src/`: Decky React/TypeScript QAM interface and RPC bindings.
+- `companion_session.py`: active session lifecycle.
+- `companion_process_detection.py`: emulator process matching.
+- `companion_game_detection.py`: ROM extraction and display name fallback.
+- `companion_action_engine.py`: capability checks, debounce, and action dispatch.
+- `companion_input_backends.py`: virtual input abstraction.
+- `defaults/emulators/`: independently versioned emulator profiles, copied to
+  `emulators/` by the Decky release builder.
+- `tests/`: platform-independent backend tests.
+
+## Safety
+
+The plugin never displays an action absent from the active profile. Normal quit
+uses the emulator's graceful shortcut. The MVP intentionally does not expose
+force-kill, savestate deletion, remote profile updates, or any root installer.

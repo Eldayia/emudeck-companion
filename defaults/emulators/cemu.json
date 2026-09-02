@@ -1,0 +1,15 @@
+{
+  "id": "cemu",
+  "name": "Cemu",
+  "profile_version": 1,
+  "platform": "Wii U",
+  "processes": ["Cemu", "cemu", "Cemu.exe"],
+  "rom_extensions": ["wua", "wud", "wux", "rpx"],
+  "capabilities": ["pause", "swap_screen", "fullscreen", "quit"],
+  "actions": {
+    "pause": {"label": "Pause / Resume", "method": "hotkey", "keys": ["leftctrl", "p"], "mode": "toggle"},
+    "swap_screen": {"label": "Swap Screens", "method": "hotkey", "keys": ["leftctrl", "tab"]},
+    "fullscreen": {"label": "Fullscreen", "method": "hotkey", "keys": ["leftalt", "enter"], "mode": "toggle"},
+    "quit": {"label": "Quit Emulator", "method": "hotkey", "keys": ["leftalt", "f4"]}
+  }
+}

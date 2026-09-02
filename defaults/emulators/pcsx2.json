@@ -1,0 +1,21 @@
+{
+  "id": "pcsx2",
+  "name": "PCSX2",
+  "profile_version": 1,
+  "platform": "PlayStation 2",
+  "processes": ["pcsx2-qt", "PCSX2", "pcsx2.exe"],
+  "rom_extensions": ["bin", "chd", "cso", "cue", "elf", "iso", "m3u"],
+  "default_slot": 0,
+  "capabilities": ["save_state", "load_state", "slot_previous", "slot_next", "fast_forward", "pause", "fullscreen", "screenshot", "quit"],
+  "actions": {
+    "save_state": {"label": "Save State", "method": "hotkey", "keys": ["f1"]},
+    "load_state": {"label": "Load State", "method": "hotkey", "keys": ["f3"]},
+    "slot_previous": {"label": "Previous Slot", "method": "hotkey", "keys": ["f2"], "minimum": 0, "maximum": 9},
+    "slot_next": {"label": "Next Slot", "method": "hotkey", "keys": ["leftshift", "f2"], "minimum": 0, "maximum": 9},
+    "fast_forward": {"label": "Fast Forward", "method": "hotkey", "keys": ["f4"], "mode": "toggle"},
+    "pause": {"label": "Pause / Resume", "method": "hotkey", "keys": ["space"], "mode": "toggle"},
+    "fullscreen": {"label": "Fullscreen", "method": "hotkey", "keys": ["leftalt", "enter"], "mode": "toggle"},
+    "screenshot": {"label": "Screenshot", "method": "hotkey", "keys": ["f8"]},
+    "quit": {"label": "Quit Emulator", "method": "hotkey", "keys": ["leftalt", "f4"]}
+  }
+}

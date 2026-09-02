@@ -1,0 +1,24 @@
+{
+  "id": "duckstation",
+  "name": "DuckStation",
+  "profile_version": 1,
+  "platform": "PlayStation",
+  "processes": ["duckstation-qt", "duckstation-nogui", "DuckStation.exe"],
+  "rom_extensions": ["bin", "chd", "cue", "iso", "m3u", "pbp"],
+  "default_slot": 1,
+  "capabilities": ["save_state", "load_state", "slot_previous", "slot_next", "fast_forward", "pause", "previous_disc", "next_disc", "screenshot", "emulator_menu", "fullscreen", "quit"],
+  "actions": {
+    "save_state": {"label": "Save State", "method": "hotkey", "keys": ["f2"]},
+    "load_state": {"label": "Load State", "method": "hotkey", "keys": ["f1"]},
+    "slot_previous": {"label": "Previous Slot", "method": "hotkey", "keys": ["f3"], "minimum": 1, "maximum": 10},
+    "slot_next": {"label": "Next Slot", "method": "hotkey", "keys": ["f4"], "minimum": 1, "maximum": 10},
+    "fast_forward": {"label": "Fast Forward", "method": "hotkey", "keys": ["tab"], "mode": "toggle"},
+    "pause": {"label": "Pause / Resume", "method": "hotkey", "keys": ["space"], "mode": "toggle"},
+    "previous_disc": {"label": "Previous Disc", "method": "hotkey", "keys": ["leftshift", "f8"]},
+    "next_disc": {"label": "Next Disc", "method": "hotkey", "keys": ["f8"]},
+    "screenshot": {"label": "Screenshot", "method": "hotkey", "keys": ["f10"]},
+    "emulator_menu": {"label": "Emulator Menu", "method": "hotkey", "keys": ["esc"]},
+    "fullscreen": {"label": "Fullscreen", "method": "hotkey", "keys": ["leftalt", "enter"], "mode": "toggle"},
+    "quit": {"label": "Quit Emulator", "method": "hotkey", "keys": ["leftalt", "f4"]}
+  }
+}

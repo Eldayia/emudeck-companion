@@ -1,0 +1,10 @@
+{
+  "name": "EmuDeck Companion",
+  "author": "EmuDeck Companion contributors",
+  "flags": ["debug"],
+  "api_version": 1,
+  "publish": {
+    "tags": ["emulation", "emudeck", "utility"],
+    "description": "Context-aware controls for the active EmuDeck emulator."
+  }
+}

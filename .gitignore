@@ -1,0 +1,9 @@
+node_modules/
+.pnpm-store/
+dist/
+out/
+*.py[cod]
+__pycache__/
+.pytest_cache/
+.coverage
+.mypy_cache/

@@ -1,0 +1,22 @@
+{
+  "id": "dolphin",
+  "name": "Dolphin",
+  "profile_version": 1,
+  "platform": "GameCube / Wii",
+  "processes": ["dolphin-emu", "dolphin-emu-wrapper", "Dolphin.exe"],
+  "rom_extensions": ["ciso", "dol", "elf", "gcm", "iso", "m3u", "rvz", "wad", "wbfs"],
+  "default_slot": 1,
+  "capabilities": ["save_state", "load_state", "slot_previous", "slot_next", "fast_forward", "pause", "previous_disc", "next_disc", "fullscreen", "quit"],
+  "actions": {
+    "save_state": {"label": "Save State", "method": "hotkey", "keys": ["leftshift", "f{slot}"]},
+    "load_state": {"label": "Load State", "method": "hotkey", "keys": ["f{slot}"]},
+    "slot_previous": {"label": "Previous Slot", "method": "select_slot", "minimum": 1, "maximum": 10},
+    "slot_next": {"label": "Next Slot", "method": "select_slot", "minimum": 1, "maximum": 10},
+    "fast_forward": {"label": "Fast Forward", "method": "hotkey", "keys": ["tab"], "mode": "toggle"},
+    "pause": {"label": "Pause / Resume", "method": "hotkey", "keys": ["f10"], "mode": "toggle"},
+    "previous_disc": {"label": "Previous Disc", "method": "hotkey", "keys": ["leftshift", "f9"]},
+    "next_disc": {"label": "Next Disc", "method": "hotkey", "keys": ["f9"]},
+    "fullscreen": {"label": "Fullscreen", "method": "hotkey", "keys": ["leftalt", "enter"], "mode": "toggle"},
+    "quit": {"label": "Quit Emulator", "method": "hotkey", "keys": ["leftalt", "f4"]}
+  }
+}
