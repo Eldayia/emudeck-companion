@@ -36,12 +36,14 @@ class SessionManager:
         metadata_provider: Callable[[str | None], dict[str, Any]] | None = None,
         savestate_provider: Callable[[dict[str, Any], str | None], list[dict[str, Any]]] | None = None,
         document_provider: Callable[[str | None, dict[str, Any]], list[dict[str, Any]]] | None = None,
+        profile_provider: Callable[[dict[str, Any], ProcessInfo], dict[str, Any]] | None = None,
     ) -> None:
         self.profiles = profiles
         self.process_provider = process_provider
         self.metadata_provider = metadata_provider
         self.savestate_provider = savestate_provider
         self.document_provider = document_provider
+        self.profile_provider = profile_provider
         self.current: Session | None = None
 
     def refresh(self) -> Session | None:
@@ -50,7 +52,17 @@ class SessionManager:
             self.current = None
             return None
         profile, process = detected
+        if self.profile_provider:
+            profile = self.profile_provider(profile, process)
         if self.current is not None and self.current.pid == process.pid:
+            capabilities = contextual_capabilities(profile, self.current.rom)
+            if len(self.current.discs) <= 1:
+                capabilities = [a for a in capabilities if a not in {"previous_disc", "next_disc"}]
+            if self.current.actions != profile["actions"]:
+                self.current.toggles.clear()
+            self.current.actions = dict(profile["actions"])
+            self.current.capabilities = capabilities
+            self.current.hotkey_config = profile.get("hotkey_config", {})
             if self.savestate_provider:
                 self.current.savestates = self.savestate_provider(profile, self.current.rom)
             if self.document_provider:
@@ -81,6 +93,7 @@ class SessionManager:
             current_disc=1 if discs else None,
             savestates=self.savestate_provider(profile, rom) if self.savestate_provider else [],
             documents=self.document_provider(rom, metadata) if self.document_provider else [],
+            hotkey_config=profile.get("hotkey_config", {}),
         )
         return self.current
 

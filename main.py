@@ -24,6 +24,7 @@ from companion_documents import DocumentIndex
 from companion_emudeck import detect_emudeck
 from companion_esde import ESDEMetadataIndex
 from companion_game_overrides import hidden_actions, session_payload
+from companion_hotkey_config import DuckStationHotkeyConfig
 from companion_models import ActionResult
 from companion_profiles import ProfileStore
 from companion_savestates import SavestateIndex
@@ -55,6 +56,7 @@ class Plugin:
             metadata_provider=self.metadata_index.lookup,
             savestate_provider=self.savestate_index.lookup,
             document_provider=self.document_index.lookup,
+            profile_provider=DuckStationHotkeyConfig(Path(decky.DECKY_USER_HOME)),
         )
         self.action_engine = ActionEngine(frontend_input=True)
         self.last_action: dict[str, Any] | None = None

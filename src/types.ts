@@ -3,6 +3,7 @@ export interface ActionDefinition {
   method: string;
   keys?: string[];
   mode?: "toggle" | "hold";
+  binding_source?: string;
 }
 export interface EmulatorSession {
   emulator: string;
@@ -15,6 +16,12 @@ export interface EmulatorSession {
   platform: string | null;
   capabilities: string[];
   available_capabilities: string[];
+  hotkey_config?: {
+    status?: string;
+    path?: string;
+    scope?: string;
+    disabled_actions?: Record<string, string>;
+  };
   actions: Record<string, ActionDefinition>;
   started_at: number;
   slot: number;

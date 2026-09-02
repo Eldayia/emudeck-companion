@@ -131,6 +131,14 @@ function Diagnostics({ data, onRefresh }) {
         ],
         ["Last action", data.last_action?.message ?? "None"],
     ];
+    const config = data.session?.hotkey_config;
+    if (config?.status) {
+        rows.push(["Hotkey configuration", `${config.status} — ${config.path ?? ""}`]);
+        rows.push(["Hotkey scope", config.scope ?? "Global settings"]);
+        for (const [action, reason] of Object.entries(config.disabled_actions ?? {})) {
+            rows.push([data.session?.actions[action]?.label ?? action, reason]);
+        }
+    }
     return (SP_JSX.jsxs(DFL.PanelSection, { title: "Diagnostics", children: [rows.map(([label, value]) => (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: { width: "100%" }, children: [SP_JSX.jsx("div", { style: { opacity: 0.55, fontSize: "12px" }, children: label }), SP_JSX.jsx("div", { style: { overflowWrap: "anywhere" }, children: value })] }) }, label))), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => void onRefresh(), children: "Refresh Detection" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => void copyDiagnostics(), children: "Copy Diagnostics" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => void saveDiagnostics(), children: "Export Diagnostics" }) })] }));
 }
 
@@ -219,6 +227,13 @@ const keyLabels = {
     insert: "Insert",
     home: "Home",
     pageup: "Page Up",
+    pagedown: "Page Down",
+    delete: "Delete",
+    backspace: "Backspace",
+    up: "Up",
+    down: "Down",
+    left: "Left",
+    right: "Right",
     end: "End",
 };
 function formatKey(key, slot) {
@@ -247,7 +262,7 @@ function Hotkeys({ session }) {
                                 alignItems: "center",
                                 justifyContent: "space-between",
                                 gap: "12px",
-                            }, children: [SP_JSX.jsx("span", { children: definition.label }), SP_JSX.jsx("span", { style: { opacity: 0.72, whiteSpace: "nowrap" }, children: definition.keys?.map((key) => formatKey(key, session.slot)).join(" + ") })] }) }, action)))] }))] }));
+                            }, children: [SP_JSX.jsxs("span", { children: [definition.label, definition.binding_source && (SP_JSX.jsx("div", { style: { opacity: 0.55, fontSize: "11px" }, children: definition.binding_source }))] }), SP_JSX.jsx("span", { style: { opacity: 0.72, whiteSpace: "nowrap" }, children: definition.keys?.map((key) => formatKey(key, session.slot)).join(" + ") })] }) }, action)))] }))] }));
 }
 
 function Settings({ settings, session, onChange }) {
@@ -553,7 +568,33 @@ const keys = {
     "2": EHIDKeyboardKey.Key_2,
     "3": EHIDKeyboardKey.Key_3,
     "4": EHIDKeyboardKey.Key_4,
+    "5": EHIDKeyboardKey.Key_5,
+    "6": EHIDKeyboardKey.Key_6,
+    "7": EHIDKeyboardKey.Key_7,
+    "8": EHIDKeyboardKey.Key_8,
+    "9": EHIDKeyboardKey.Key_9,
+    "0": EHIDKeyboardKey.Key_0,
     a: EHIDKeyboardKey.A,
+    b: EHIDKeyboardKey.B,
+    c: EHIDKeyboardKey.C,
+    e: EHIDKeyboardKey.E,
+    g: EHIDKeyboardKey.G,
+    h: EHIDKeyboardKey.H,
+    i: EHIDKeyboardKey.I,
+    j: EHIDKeyboardKey.J,
+    k: EHIDKeyboardKey.K,
+    l: EHIDKeyboardKey.L,
+    m: EHIDKeyboardKey.M,
+    n: EHIDKeyboardKey.N,
+    o: EHIDKeyboardKey.O,
+    q: EHIDKeyboardKey.Q,
+    t: EHIDKeyboardKey.T,
+    u: EHIDKeyboardKey.U,
+    v: EHIDKeyboardKey.V,
+    w: EHIDKeyboardKey.W,
+    x: EHIDKeyboardKey.X,
+    y: EHIDKeyboardKey.Y,
+    z: EHIDKeyboardKey.Z,
     s: EHIDKeyboardKey.S,
     d: EHIDKeyboardKey.D,
     f: EHIDKeyboardKey.F,
@@ -567,6 +608,13 @@ const keys = {
     home: EHIDKeyboardKey.Home,
     pageup: EHIDKeyboardKey.PageUp,
     end: EHIDKeyboardKey.End,
+    pagedown: EHIDKeyboardKey.PageDown,
+    delete: EHIDKeyboardKey.Delete,
+    backspace: EHIDKeyboardKey.Backspace,
+    up: EHIDKeyboardKey.UpArrow,
+    down: EHIDKeyboardKey.DownArrow,
+    left: EHIDKeyboardKey.LeftArrow,
+    right: EHIDKeyboardKey.RightArrow,
     f1: EHIDKeyboardKey.F1,
     f2: EHIDKeyboardKey.F2,
     f3: EHIDKeyboardKey.F3,

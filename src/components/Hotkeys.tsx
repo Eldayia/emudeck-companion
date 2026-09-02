@@ -13,6 +13,13 @@ const keyLabels: Record<string, string> = {
   insert: "Insert",
   home: "Home",
   pageup: "Page Up",
+  pagedown: "Page Down",
+  delete: "Delete",
+  backspace: "Backspace",
+  up: "Up",
+  down: "Down",
+  left: "Left",
+  right: "Right",
   end: "End",
 };
 
@@ -59,7 +66,12 @@ export function Hotkeys({ session }: { session: EmulatorSession }) {
                   gap: "12px",
                 }}
               >
-                <span>{definition.label}</span>
+                <span>
+                  {definition.label}
+                  {definition.binding_source && (
+                    <div style={{ opacity: 0.55, fontSize: "11px" }}>{definition.binding_source}</div>
+                  )}
+                </span>
                 <span style={{ opacity: 0.72, whiteSpace: "nowrap" }}>
                   {definition.keys?.map((key) => formatKey(key, session.slot)).join(" + ")}
                 </span>

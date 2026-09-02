@@ -39,6 +39,14 @@ export function Diagnostics({ data, onRefresh }: { data: DiagnosticsData; onRefr
     ],
     ["Last action", data.last_action?.message ?? "None"],
   ];
+  const config = data.session?.hotkey_config;
+  if (config?.status) {
+    rows.push(["Hotkey configuration", `${config.status} — ${config.path ?? ""}`]);
+    rows.push(["Hotkey scope", config.scope ?? "Global settings"]);
+    for (const [action, reason] of Object.entries(config.disabled_actions ?? {})) {
+      rows.push([data.session?.actions[action]?.label ?? action, reason]);
+    }
+  }
   return (
     <PanelSection title="Diagnostics">
       {rows.map(([label, value]) => (
