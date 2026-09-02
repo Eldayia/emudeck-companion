@@ -3,7 +3,7 @@
   "name": "DuckStation",
   "profile_version": 1,
   "platform": "PlayStation",
-  "processes": ["duckstation-qt", "duckstation-nogui", "DuckStation.exe"],
+  "processes": ["duckstation-qt", "duckstation-nogui", "DuckStation.AppImage", "DuckStation.App", "DuckStation.exe"],
   "rom_extensions": ["bin", "chd", "cue", "iso", "m3u", "pbp"],
   "default_slot": 1,
   "savestate_paths": ["saves/duckstation/states"],

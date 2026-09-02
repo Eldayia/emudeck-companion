@@ -60,6 +60,22 @@ class ProcessDetectionTests(unittest.TestCase):
         assert match is not None
         self.assertEqual(match[0]["id"], "azahar")
 
+    def test_matches_duckstation_appimage_and_truncated_comm(self):
+        profiles = [{
+            "id": "duckstation",
+            "processes": ["duckstation-qt", "DuckStation.AppImage", "DuckStation.App"],
+        }]
+        rom = "/home/deck/Elements/Emulation/roms/psx/Silent Hill (Europe).chd"
+        processes = [
+            ProcessInfo(35763, "AppRun", ("/home/deck/Applications/DuckStation.AppImage", "-batch", rom), 100),
+            ProcessInfo(35768, "DuckStation.App", ("/home/deck/Applications/DuckStation.AppImage", "-batch", rom), 101),
+        ]
+        match = find_emulator(profiles, processes)
+        self.assertIsNotNone(match)
+        assert match is not None
+        self.assertEqual(match[0]["id"], "duckstation")
+        self.assertEqual(match[1].pid, 35768)
+
     def test_matches_flycast_flatpak_child(self):
         profiles = [{"id": "flycast", "processes": ["flycast"]}]
         processes = [ProcessInfo(

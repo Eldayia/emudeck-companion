@@ -49,6 +49,14 @@ class ProfileStoreTests(unittest.TestCase):
         self.assertNotIn("save_state", cemu["capabilities"])
         self.assertNotIn("load_state", cemu["capabilities"])
 
+    def test_duckstation_matches_current_emudeck_appimage(self):
+        store = ProfileStore(ROOT / "defaults" / "emulators")
+        store.load()
+        duckstation = store.get("duckstation")
+        assert duckstation is not None
+        self.assertIn("DuckStation.AppImage", duckstation["processes"])
+        self.assertIn("DuckStation.App", duckstation["processes"])
+
     def test_phase_three_profiles_use_supported_hotkeys_only(self):
         store = ProfileStore(ROOT / "defaults" / "emulators")
         store.load()
