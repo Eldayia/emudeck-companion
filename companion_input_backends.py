@@ -43,6 +43,8 @@ class YdotoolBackend(InputBackend):
         "s": 31, "d": 32, "f": 33, "l": 38, "space": 57,
         "f1": 59, "f2": 60, "f3": 61, "f4": 62, "f5": 63,
         "f6": 64, "f7": 65, "f8": 66, "f9": 67, "f10": 68,
+        "f11": 87, "f12": 88, "home": 102, "pageup": 104,
+        "end": 107, "insert": 110,
         "leftctrl": 29, "leftshift": 42, "leftalt": 56, "enter": 28,
     }
 

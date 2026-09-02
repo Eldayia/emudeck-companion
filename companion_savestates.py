@@ -8,6 +8,8 @@ from typing import Any
 
 SLOT_PATTERNS = (
     re.compile(r"\.state(?P<slot>\d*)$", re.IGNORECASE),
+    re.compile(r"\.ml(?P<slot>[1-8])$", re.IGNORECASE),
+    re.compile(r"_(?P<slot>\d)\.ppst$", re.IGNORECASE),
     re.compile(r"\.s(?P<slot>\d{2})$", re.IGNORECASE),
     re.compile(r"[._-](?P<slot>\d{1,2})\.p2s$", re.IGNORECASE),
     re.compile(r"[._-](?P<slot>\d{1,2})\.sav$", re.IGNORECASE),

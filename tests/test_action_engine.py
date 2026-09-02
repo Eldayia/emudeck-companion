@@ -75,6 +75,15 @@ class ActionEngineTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(result.dispatch, "steam_input")
         self.assertEqual(result.keys, ["f1"])
 
+    async def test_wraps_emulator_slot_when_configured(self):
+        engine = ActionEngine(FakeInputBackend(), debounce_ms=0)
+        session = make_session()
+        session.slot = 2
+        session.actions["slot_next"]["wrap"] = True
+        session.actions["slot_next"]["minimum"] = 0
+        await engine.execute(session, "slot_next")
+        self.assertEqual(session.slot, 0)
+
 
 if __name__ == "__main__":
     unittest.main()

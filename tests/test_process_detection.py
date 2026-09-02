@@ -32,6 +32,21 @@ class ProcessDetectionTests(unittest.TestCase):
         processes = [ProcessInfo(10, "es-de", ("es-de",), 300)]
         self.assertIsNone(find_emulator(profiles, processes))
 
+    def test_matches_flatpak_emulator_processes(self):
+        profiles = [
+            {"id": "ppsspp", "processes": ["PPSSPPSDL"]},
+            {"id": "melonds", "processes": ["melonDS"]},
+        ]
+        processes = [
+            ProcessInfo(30, "PPSSPPSDL", ("PPSSPPSDL", "/roms/game.iso"), 300),
+            ProcessInfo(40, "melonDS", ("melonDS", "/roms/game.nds", "-f"), 400),
+        ]
+        match = find_emulator(profiles, processes)
+        self.assertIsNotNone(match)
+        assert match is not None
+        self.assertEqual(match[0]["id"], "melonds")
+        self.assertEqual(match[1].pid, 40)
+
 
 if __name__ == "__main__":
     unittest.main()

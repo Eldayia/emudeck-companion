@@ -1,0 +1,20 @@
+{
+  "id": "ppsspp",
+  "name": "PPSSPP",
+  "profile_version": 1,
+  "platform": "PlayStation Portable",
+  "processes": ["PPSSPPSDL", "PPSSPPQt", "ppsspp", "PPSSPP.exe"],
+  "rom_extensions": ["cso", "elf", "iso", "pbp", "prx"],
+  "default_slot": 0,
+  "savestate_paths": ["saves/ppsspp/states"],
+  "savestate_patterns": ["{stem}_?.ppst"],
+  "capabilities": ["save_state", "load_state", "slot_previous", "slot_next", "emulator_menu", "quit"],
+  "actions": {
+    "save_state": {"label": "Save State", "method": "hotkey", "keys": ["f2"]},
+    "load_state": {"label": "Load State", "method": "hotkey", "keys": ["f3"]},
+    "slot_previous": {"label": "Previous Slot", "method": "hotkey", "keys": ["f7"], "minimum": 0, "maximum": 4, "wrap": true},
+    "slot_next": {"label": "Next Slot", "method": "hotkey", "keys": ["f6"], "minimum": 0, "maximum": 4, "wrap": true},
+    "emulator_menu": {"label": "Quick Menu", "method": "hotkey", "keys": ["esc"]},
+    "quit": {"label": "Quit Emulator", "method": "hotkey", "keys": ["leftalt", "f4"]}
+  }
+}

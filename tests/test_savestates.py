@@ -43,6 +43,21 @@ class SavestateIndexTests(unittest.TestCase):
         profile = {"savestate_paths": ["states"], "savestate_patterns": ["{stem}.state*"]}
         self.assertEqual(SavestateIndex(None).lookup(profile, "Game.rom"), [])
 
+    def test_finds_melonds_slots(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            states = root / "saves" / "melonds" / "states"
+            states.mkdir(parents=True)
+            state = states / "Mario Kart DS.ml3"
+            state.write_bytes(b"state")
+            profile = {
+                "savestate_paths": ["saves/melonds/states"],
+                "savestate_patterns": ["{stem}.ml?"],
+            }
+            result = SavestateIndex(root).lookup(profile, "/roms/Mario Kart DS.nds")
+            self.assertEqual(len(result), 1)
+            self.assertEqual(result[0]["slot"], 3)
+
 
 if __name__ == "__main__":
     unittest.main()

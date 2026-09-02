@@ -30,6 +30,14 @@ class GameDetectionTests(unittest.TestCase):
             "/home/deck/Elements/Emulation/roms/n64/Doom 64 (Europe).n64",
         )
 
+    def test_extracts_melonds_rom_before_fullscreen_flag(self):
+        profile = {"rom_extensions": ["app", "nds"]}
+        argv = ["melonDS", "/home/deck/Emulation/roms/nds/Mario Kart DS.nds", "-f"]
+        self.assertEqual(
+            extract_rom(argv, profile),
+            "/home/deck/Emulation/roms/nds/Mario Kart DS.nds",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

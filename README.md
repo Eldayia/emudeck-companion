@@ -6,10 +6,11 @@ It does not replace EmuDeck and does not require EmuDecky.
 
 ## Current status
 
-Version 0.2 includes:
+Version 0.3 includes:
 
 - automatic process and ROM detection through `/proc`;
-- data-driven profiles for Cemu, DuckStation, PCSX2, Dolphin, and RetroArch;
+- data-driven profiles for Cemu, DuckStation, PCSX2, Dolphin, RetroArch,
+  PPSSPP, and melonDS;
 - contextual QAM sections (unsupported actions are hidden);
 - save/load, slots, pause, fast-forward, display, disc, menu, screenshot, and
   graceful quit actions where the profile supports them;
@@ -33,6 +34,11 @@ RetroArch's native menu is intentionally not exposed: a clean EmuDeck profile
 disables its keyboard menu binding and Decky cannot safely inject the configured
 gamepad chord into the active controller. Supported RetroArch operations remain
 available directly as controller-friendly QAM actions.
+
+PPSSPP and melonDS shortcuts mirror EmuDeck's shipped emulator configuration.
+PPSSPP's Quick Menu remains available because its native interface supports
+controller navigation. melonDS exposes direct slots 1–8, its toggle fast-forward
+binding, pause, screen swap, lid, fullscreen, and graceful quit controls.
 
 ## Development
 

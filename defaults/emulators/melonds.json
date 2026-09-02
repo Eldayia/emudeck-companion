@@ -1,0 +1,24 @@
+{
+  "id": "melonds",
+  "name": "melonDS",
+  "profile_version": 1,
+  "platform": "Nintendo DS",
+  "processes": ["melonDS", "melonds", "melonDS.exe"],
+  "rom_extensions": ["app", "nds"],
+  "default_slot": 1,
+  "savestate_paths": ["saves/melonds/states", "saves/melonDS/states"],
+  "savestate_patterns": ["{stem}.ml?"],
+  "capabilities": ["save_state", "load_state", "slot_previous", "slot_next", "fast_forward", "pause", "swap_screen", "lid", "fullscreen", "quit"],
+  "actions": {
+    "save_state": {"label": "Save State", "method": "hotkey", "keys": ["leftshift", "f{slot}"]},
+    "load_state": {"label": "Load State", "method": "hotkey", "keys": ["f{slot}"]},
+    "slot_previous": {"label": "Previous Slot", "method": "select_slot", "minimum": 1, "maximum": 8},
+    "slot_next": {"label": "Next Slot", "method": "select_slot", "minimum": 1, "maximum": 8},
+    "fast_forward": {"label": "Fast Forward", "method": "hotkey", "keys": ["end"], "mode": "toggle"},
+    "pause": {"label": "Pause / Resume", "method": "hotkey", "keys": ["pageup"], "mode": "toggle"},
+    "swap_screen": {"label": "Swap Screens", "method": "hotkey", "keys": ["tab"]},
+    "lid": {"label": "Close / Open Lid", "method": "hotkey", "keys": ["insert"], "mode": "toggle"},
+    "fullscreen": {"label": "Fullscreen", "method": "hotkey", "keys": ["f11"], "mode": "toggle"},
+    "quit": {"label": "Quit Emulator", "method": "hotkey", "keys": ["leftalt", "f4"]}
+  }
+}

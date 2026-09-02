@@ -9,12 +9,24 @@ ROOT = Path(__file__).resolve().parents[1]
 
 
 class ProfileStoreTests(unittest.TestCase):
-    def test_loads_all_mvp_profiles(self):
+    def test_loads_all_bundled_profiles(self):
         store = ProfileStore(ROOT / "defaults" / "emulators")
         store.load()
         self.assertEqual({profile["id"] for profile in store.profiles}, {
-            "cemu", "duckstation", "pcsx2", "dolphin", "retroarch"
+            "cemu", "duckstation", "pcsx2", "dolphin", "retroarch",
+            "ppsspp", "melonds"
         })
+
+    def test_phase_two_profiles_use_emudeck_hotkeys(self):
+        store = ProfileStore(ROOT / "defaults" / "emulators")
+        store.load()
+        ppsspp = store.get("ppsspp")
+        melonds = store.get("melonds")
+        assert ppsspp is not None and melonds is not None
+        self.assertEqual(ppsspp["actions"]["save_state"]["keys"], ["f2"])
+        self.assertEqual(ppsspp["actions"]["load_state"]["keys"], ["f3"])
+        self.assertEqual(melonds["actions"]["save_state"]["keys"], ["leftshift", "f{slot}"])
+        self.assertEqual(melonds["actions"]["fast_forward"]["keys"], ["end"])
 
     def test_cemu_has_no_savestate_capability(self):
         store = ProfileStore(ROOT / "defaults" / "emulators")

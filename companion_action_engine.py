@@ -64,10 +64,20 @@ class ActionEngine:
 
         slot = None
         if action == "slot_next":
-            session.slot = min(int(definition.get("maximum", 9)), session.slot + 1)
+            minimum = int(definition.get("minimum", 0))
+            maximum = int(definition.get("maximum", 9))
+            if definition.get("wrap") and session.slot >= maximum:
+                session.slot = minimum
+            else:
+                session.slot = min(maximum, session.slot + 1)
             slot = session.slot
         elif action == "slot_previous":
-            session.slot = max(int(definition.get("minimum", 0)), session.slot - 1)
+            minimum = int(definition.get("minimum", 0))
+            maximum = int(definition.get("maximum", 9))
+            if definition.get("wrap") and session.slot <= minimum:
+                session.slot = maximum
+            else:
+                session.slot = max(minimum, session.slot - 1)
             slot = session.slot
 
         if action == "next_disc" and session.current_disc is not None:
