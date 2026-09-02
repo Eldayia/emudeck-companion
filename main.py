@@ -78,6 +78,7 @@ class Plugin:
             "show_emulator": True,
             "show_session_time": True,
             "notifications": True,
+            "favorites": {},
         }
         try:
             stored = json.loads(self.settings_path.read_text(encoding="utf-8"))
@@ -85,7 +86,55 @@ class Plugin:
                 defaults.update(stored)
         except (FileNotFoundError, OSError, json.JSONDecodeError):
             pass
-        return defaults
+        return self._validated_settings(defaults)
+
+    def _validated_settings(self, value: dict[str, Any]) -> dict[str, Any]:
+        interval = value.get("detection_interval_ms", 1500)
+        if not isinstance(interval, int) or isinstance(interval, bool):
+            interval = 1500
+        favorites: dict[str, list[str]] = {}
+        raw_favorites = value.get("favorites", {})
+        if isinstance(raw_favorites, dict):
+            for profile_id, actions in raw_favorites.items():
+                profile = self.profile_store.get(str(profile_id))
+                if profile is None or not isinstance(actions, list):
+                    continue
+                allowed = profile["actions"]
+                selected: list[str] = []
+                for action in actions:
+                    if isinstance(action, str) and action in allowed and action not in selected:
+                        selected.append(action)
+                if selected:
+                    favorites[profile["id"]] = selected[:4]
+        return {
+            "settings_version": 1,
+            "detection_interval_ms": min(5000, max(1000, interval)),
+            "show_platform": value.get("show_platform") is not False,
+            "show_emulator": value.get("show_emulator") is not False,
+            "show_session_time": value.get("show_session_time") is not False,
+            "notifications": value.get("notifications") is not False,
+            "favorites": favorites,
+        }
+
+    def _save_settings(self) -> None:
+        self.settings_path.parent.mkdir(parents=True, exist_ok=True)
+        temporary = self.settings_path.with_suffix(".tmp")
+        temporary.write_text(json.dumps(self.settings, indent=2) + "\n", encoding="utf-8")
+        temporary.replace(self.settings_path)
+
+    async def get_settings(self) -> dict[str, Any]:
+        async with self._lock:
+            return json.loads(json.dumps(self.settings))
+
+    async def update_settings(self, changes: dict[str, Any]) -> dict[str, Any]:
+        async with self._lock:
+            if not isinstance(changes, dict):
+                raise ValueError("Settings update must be an object")
+            merged = dict(self.settings)
+            merged.update(changes)
+            self.settings = self._validated_settings(merged)
+            self._save_settings()
+            return json.loads(json.dumps(self.settings))
 
     async def get_current_session(self) -> dict[str, Any] | None:
         async with self._lock:

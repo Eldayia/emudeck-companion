@@ -1,4 +1,5 @@
 import importlib
+import json
 import sys
 import tempfile
 import types
@@ -29,6 +30,22 @@ class PluginIntegrationTests(unittest.IsolatedAsyncioTestCase):
                 diagnostics = await plugin.get_diagnostics()
                 self.assertIsNone(diagnostics["session"])
                 self.assertEqual(len(plugin.profile_store.profiles), 14)
+                settings = await plugin.update_settings({
+                    "notifications": False,
+                    "detection_interval_ms": 100,
+                    "favorites": {
+                        "cemu": ["pause", "invalid", "pause", "swap_screen", "fullscreen", "quit"],
+                        "unknown": ["quit"],
+                    },
+                })
+                self.assertFalse(settings["notifications"])
+                self.assertEqual(settings["detection_interval_ms"], 1000)
+                self.assertEqual(
+                    settings["favorites"],
+                    {"cemu": ["pause", "swap_screen", "fullscreen", "quit"]},
+                )
+                persisted = json.loads(Path(directory, "settings.json").read_text(encoding="utf-8"))
+                self.assertEqual(persisted, settings)
                 await plugin._unload()
             finally:
                 sys.modules.pop("main", None)

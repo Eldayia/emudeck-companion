@@ -6,7 +6,7 @@ It does not replace EmuDeck and does not require EmuDecky.
 
 ## Current status
 
-Version 0.6 includes:
+Version 0.7 includes:
 
 - automatic process and ROM detection through `/proc`;
 - data-driven profiles for Cemu, DuckStation, PCSX2, Dolphin, RetroArch,
@@ -23,6 +23,8 @@ Version 0.6 includes:
   can be matched safely;
 - 250 ms protection against accidental double actions;
 - controller-friendly Decky controls with no pointer-only interaction.
+- persistent per-emulator favorites (up to four actions), display preferences,
+  configurable detection interval, and optional success notifications.
 
 Hotkeys are delivered through Steam's controller-keyboard API after the QAM is
 closed, so no extra input package or root access is required. `ydotool`, Wayland
@@ -86,7 +88,8 @@ sudo systemctl restart plugin_loader
 ```
 
 Settings use Decky's current `DECKY_PLUGIN_SETTINGS_DIR`. No system files or
-EmuDeck configuration are modified.
+EmuDeck configuration are modified. Favorites and UI preferences are validated
+before being written atomically to the plugin's `settings.json`.
 
 ## Architecture
 

@@ -45,6 +45,16 @@ export interface EmuDeckStatus {
   esde_root: string | null;
 }
 
+export interface CompanionSettings {
+  settings_version: number;
+  detection_interval_ms: number;
+  show_platform: boolean;
+  show_emulator: boolean;
+  show_session_time: boolean;
+  notifications: boolean;
+  favorites: Record<string, string[]>;
+}
+
 export interface DiagnosticsData {
   timestamp: number;
   system: string;

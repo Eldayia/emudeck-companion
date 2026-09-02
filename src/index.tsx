@@ -2,20 +2,31 @@ import { ButtonItem, Navigation, PanelSection, PanelSectionRow, staticClasses } 
 import { definePlugin, toaster } from "@decky/api";
 import { useCallback, useEffect, useState } from "react";
 import { FaGamepad } from "react-icons/fa";
-import { executeAction, getArtwork, getCurrentSession, getDiagnostics, refreshDetection } from "./api/backend";
+import {
+  executeAction,
+  getArtwork,
+  getCurrentSession,
+  getDiagnostics,
+  getSettings,
+  refreshDetection,
+  updateSettings,
+} from "./api/backend";
 import { Diagnostics } from "./components/Diagnostics";
 import { EmulatorActions } from "./components/EmulatorActions";
 import { GameHeader } from "./components/GameHeader";
+import { Settings } from "./components/Settings";
 import { pressHotkeys } from "./hotkey";
-import type { DiagnosticsData, EmulatorSession } from "./types";
+import type { CompanionSettings, DiagnosticsData, EmulatorSession } from "./types";
 
 function Content() {
   const [session, setSession] = useState<EmulatorSession | null>(null);
   const [loaded, setLoaded] = useState(false);
   const [busyAction, setBusyAction] = useState<string | null>(null);
   const [showDiagnostics, setShowDiagnostics] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
   const [diagnostics, setDiagnostics] = useState<DiagnosticsData | null>(null);
   const [artwork, setArtwork] = useState<string | null>(null);
+  const [settings, setSettings] = useState<CompanionSettings | null>(null);
 
   const updateSession = useCallback(async () => {
     try {
@@ -36,17 +47,23 @@ function Content() {
   }, []);
 
   useEffect(() => {
+    void getSettings()
+      .then(setSettings)
+      .catch((error) => toaster.toast({ title: "Settings unavailable", body: String(error) }));
+  }, []);
+
+  useEffect(() => {
     let disposed = false;
     const poll = async () => {
       if (!disposed) await updateSession();
     };
     void poll();
-    const timer = window.setInterval(() => void poll(), 1500);
+    const timer = window.setInterval(() => void poll(), settings?.detection_interval_ms ?? 1500);
     return () => {
       disposed = true;
       window.clearInterval(timer);
     };
-  }, [updateSession]);
+  }, [settings?.detection_interval_ms, updateSession]);
 
   useEffect(() => {
     let disposed = false;
@@ -73,16 +90,20 @@ function Content() {
         window.setTimeout(() => {
           try {
             pressHotkeys(result.keys ?? []);
-            toaster.toast({ title: "EmuDeck Companion", body: result.message });
+            if (settings?.notifications !== false) {
+              toaster.toast({ title: "EmuDeck Companion", body: result.message });
+            }
           } catch (error) {
             toaster.toast({ title: "Action failed", body: String(error) });
           }
         }, 200);
       } else {
-        toaster.toast({
-          title: result.ok ? "EmuDeck Companion" : "Action failed",
-          body: result.message,
-        });
+        if (!result.ok || settings?.notifications !== false) {
+          toaster.toast({
+            title: result.ok ? "EmuDeck Companion" : "Action failed",
+            body: result.message,
+          });
+        }
         await updateSession();
       }
     } catch (error) {
@@ -90,7 +111,15 @@ function Content() {
     } finally {
       setBusyAction(null);
     }
-  }, [busyAction, updateSession]);
+  }, [busyAction, settings?.notifications, updateSession]);
+
+  const saveSettings = useCallback(async (changes: Partial<CompanionSettings>) => {
+    try {
+      setSettings(await updateSettings(changes));
+    } catch (error) {
+      toaster.toast({ title: "Settings update failed", body: String(error) });
+    }
+  }, []);
 
   const manualRefresh = useCallback(async () => {
     setSession(await refreshDetection());
@@ -106,9 +135,16 @@ function Content() {
       {session ? (
         <>
           <PanelSection>
-            <PanelSectionRow><GameHeader session={session} artwork={artwork} /></PanelSectionRow>
+            <PanelSectionRow>
+              <GameHeader session={session} artwork={artwork} settings={settings} />
+            </PanelSectionRow>
           </PanelSection>
-          <EmulatorActions session={session} busyAction={busyAction} onAction={onAction} />
+          <EmulatorActions
+            session={session}
+            favorites={settings?.favorites[session.emulator] ?? []}
+            busyAction={busyAction}
+            onAction={onAction}
+          />
         </>
       ) : (
         <PanelSection title="EmuDeck Companion">
@@ -126,11 +162,19 @@ function Content() {
       )}
       <PanelSection>
         <PanelSectionRow>
+          <ButtonItem layout="below" onClick={() => setShowSettings((value) => !value)}>
+            {showSettings ? "Hide Settings" : "Show Settings"}
+          </ButtonItem>
+        </PanelSectionRow>
+        <PanelSectionRow>
           <ButtonItem layout="below" onClick={() => setShowDiagnostics((value) => !value)}>
             {showDiagnostics ? "Hide Diagnostics" : "Show Diagnostics"}
           </ButtonItem>
         </PanelSectionRow>
       </PanelSection>
+      {showSettings && settings && (
+        <Settings settings={settings} session={session} onChange={saveSettings} />
+      )}
       {showDiagnostics && diagnostics && <Diagnostics data={diagnostics} onRefresh={manualRefresh} />}
     </>
   );

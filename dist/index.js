@@ -89,6 +89,8 @@ const executeAction = callable("execute_action");
 const refreshDetection = callable("refresh_detection");
 const getDiagnostics = callable("get_diagnostics");
 callable("reload_profiles");
+const getSettings = callable("get_settings");
+const updateSettings = callable("update_settings");
 
 function Diagnostics({ data, onRefresh }) {
     const rows = [
@@ -120,19 +122,21 @@ function stateTimestamp(timestamp) {
         ? date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
         : date.toLocaleDateString([], { month: "short", day: "numeric" });
 }
-function EmulatorActions({ session, busyAction, onAction }) {
+function EmulatorActions({ session, favorites, busyAction, onAction }) {
     const supported = new Set(session.capabilities);
     const hasSlots = supported.has("slot_previous") && supported.has("slot_next");
-    return (SP_JSX.jsx(SP_JSX.Fragment, { children: groups.map((group) => {
-            const actions = group.actions.filter((action) => supported.has(action) && session.actions[action]);
-            if (actions.length === 0)
-                return null;
-            return (SP_JSX.jsxs(DFL.PanelSection, { title: group.title, children: [group.title === "Save States" && hasSlots && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: { width: "100%", textAlign: "center", opacity: 0.8 }, children: ["Current slot: ", SP_JSX.jsx("b", { children: session.slot })] }) }), session.savestates.slice(0, 5).map((state) => (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: { width: "100%", display: "flex", justifyContent: "space-between", opacity: 0.68, fontSize: "12px" }, children: [SP_JSX.jsx("span", { children: state.slot === null ? "State" : `Slot ${state.slot}` }), SP_JSX.jsx("span", { children: stateTimestamp(state.modified_at) })] }) }, state.path)))] })), actions.map((action) => {
-                        const definition = session.actions[action];
-                        const active = session.toggles[action];
-                        return (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: busyAction !== null, onClick: () => void onAction(action), children: busyAction === action ? "Working…" : `${definition.label}${active ? " — ON" : ""}` }) }, action));
-                    }), group.title === "Save States" && hasSlots && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: busyAction !== null, onClick: () => void onAction("slot_previous"), children: "Previous Slot" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: busyAction !== null, onClick: () => void onAction("slot_next"), children: "Next Slot" }) })] }))] }, group.title));
-        }) }));
+    const favoriteActions = favorites.filter((action) => supported.has(action) && session.actions[action]);
+    const actionButton = (action) => {
+        const definition = session.actions[action];
+        const active = session.toggles[action];
+        return (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: busyAction !== null, onClick: () => void onAction(action), children: busyAction === action ? "Working…" : `${definition.label}${active ? " — ON" : ""}` }) }, action));
+    };
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [favoriteActions.length > 0 && (SP_JSX.jsx(DFL.PanelSection, { title: "Favorites", children: favoriteActions.map(actionButton) })), groups.map((group) => {
+                const actions = group.actions.filter((action) => supported.has(action) && session.actions[action]);
+                if (actions.length === 0)
+                    return null;
+                return (SP_JSX.jsxs(DFL.PanelSection, { title: group.title, children: [group.title === "Save States" && hasSlots && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: { width: "100%", textAlign: "center", opacity: 0.8 }, children: ["Current slot: ", SP_JSX.jsx("b", { children: session.slot })] }) }), session.savestates.slice(0, 5).map((state) => (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: { width: "100%", display: "flex", justifyContent: "space-between", opacity: 0.68, fontSize: "12px" }, children: [SP_JSX.jsx("span", { children: state.slot === null ? "State" : `Slot ${state.slot}` }), SP_JSX.jsx("span", { children: stateTimestamp(state.modified_at) })] }) }, state.path)))] })), actions.map(actionButton), group.title === "Save States" && hasSlots && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: busyAction !== null, onClick: () => void onAction("slot_previous"), children: "Previous Slot" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: busyAction !== null, onClick: () => void onAction("slot_next"), children: "Next Slot" }) })] }))] }, group.title));
+            })] }));
 }
 
 function elapsed(startedAt) {
@@ -142,9 +146,35 @@ function elapsed(startedAt) {
     const rest = seconds % 60;
     return [hours, minutes, rest].map((value) => value.toString().padStart(2, "0")).join(":");
 }
-function GameHeader({ session, artwork }) {
-    return (SP_JSX.jsxs("div", { style: { padding: "4px 0 12px" }, children: [artwork && (SP_JSX.jsx("img", { src: artwork, alt: "", style: { width: "100%", maxHeight: "180px", objectFit: "cover", borderRadius: "6px", marginBottom: "10px" } })), SP_JSX.jsx("div", { style: { fontSize: "20px", fontWeight: 700, lineHeight: 1.2 }, children: session.game ?? "Unknown game" }), SP_JSX.jsx("div", { style: { opacity: 0.72, marginTop: "5px" }, children: [session.platform, session.emulator_name].filter(Boolean).join(" • ") }), SP_JSX.jsx("div", { style: { opacity: 0.55, fontVariantNumeric: "tabular-nums", marginTop: "3px" }, children: elapsed(session.started_at) }), session.metadata.desc && (SP_JSX.jsx("div", { style: { opacity: 0.72, fontSize: "12px", lineHeight: 1.35, marginTop: "8px" }, children: session.metadata.desc.length > 220 ? `${session.metadata.desc.slice(0, 217)}…` : session.metadata.desc })), (session.metadata.manual || session.discs.length > 1) && (SP_JSX.jsx("div", { style: { opacity: 0.6, fontSize: "12px", marginTop: "7px" }, children: [session.metadata.manual ? "Manual available" : null, session.discs.length > 1 ? `${session.discs.length} discs` : null]
+function GameHeader({ session, artwork, settings, }) {
+    const details = [
+        settings?.show_platform !== false ? session.platform : null,
+        settings?.show_emulator !== false ? session.emulator_name : null,
+    ].filter(Boolean);
+    return (SP_JSX.jsxs("div", { style: { padding: "4px 0 12px" }, children: [artwork && (SP_JSX.jsx("img", { src: artwork, alt: "", style: { width: "100%", maxHeight: "180px", objectFit: "cover", borderRadius: "6px", marginBottom: "10px" } })), SP_JSX.jsx("div", { style: { fontSize: "20px", fontWeight: 700, lineHeight: 1.2 }, children: session.game ?? "Unknown game" }), details.length > 0 && (SP_JSX.jsx("div", { style: { opacity: 0.72, marginTop: "5px" }, children: details.join(" • ") })), settings?.show_session_time !== false && (SP_JSX.jsx("div", { style: { opacity: 0.55, fontVariantNumeric: "tabular-nums", marginTop: "3px" }, children: elapsed(session.started_at) })), session.metadata.desc && (SP_JSX.jsx("div", { style: { opacity: 0.72, fontSize: "12px", lineHeight: 1.35, marginTop: "8px" }, children: session.metadata.desc.length > 220 ? `${session.metadata.desc.slice(0, 217)}…` : session.metadata.desc })), (session.metadata.manual || session.discs.length > 1) && (SP_JSX.jsx("div", { style: { opacity: 0.6, fontSize: "12px", marginTop: "7px" }, children: [session.metadata.manual ? "Manual available" : null, session.discs.length > 1 ? `${session.discs.length} discs` : null]
                     .filter(Boolean).join(" • ") }))] }));
+}
+
+function Settings({ settings, session, onChange }) {
+    const favorites = session ? (settings.favorites[session.emulator] ?? []) : [];
+    const availableActions = session
+        ? session.capabilities.filter((action) => Boolean(session.actions[action]))
+        : [];
+    const toggleFavorite = (action, checked) => {
+        const selected = checked
+            ? [...favorites, action].filter((item, index, values) => values.indexOf(item) === index).slice(0, 4)
+            : favorites.filter((item) => item !== action);
+        return onChange({
+            favorites: {
+                ...settings.favorites,
+                ...(session ? { [session.emulator]: selected } : {}),
+            },
+        });
+    };
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.PanelSection, { title: "Settings", children: [SP_JSX.jsx(DFL.ToggleField, { label: "Action notifications", description: "Show a notification after successful actions", checked: settings.notifications, onChange: (checked) => void onChange({ notifications: checked }) }), SP_JSX.jsx(DFL.ToggleField, { label: "Show platform", checked: settings.show_platform, onChange: (checked) => void onChange({ show_platform: checked }) }), SP_JSX.jsx(DFL.ToggleField, { label: "Show emulator", checked: settings.show_emulator, onChange: (checked) => void onChange({ show_emulator: checked }) }), SP_JSX.jsx(DFL.ToggleField, { label: "Show session time", checked: settings.show_session_time, onChange: (checked) => void onChange({ show_session_time: checked }) }), SP_JSX.jsx(DFL.SliderField, { label: "Detection interval", description: "How often Companion checks the active emulator", value: settings.detection_interval_ms, min: 1000, max: 5000, step: 250, showValue: true, valueSuffix: " ms", onChange: (value) => void onChange({ detection_interval_ms: value }) })] }), session && availableActions.length > 0 && (SP_JSX.jsx(DFL.PanelSection, { title: `Favorites — ${session.emulator_name}`, children: availableActions.map((action) => {
+                    const checked = favorites.includes(action);
+                    return (SP_JSX.jsx(DFL.ToggleField, { label: session.actions[action].label, description: checked ? "Shown in Favorites" : "", checked: checked, disabled: !checked && favorites.length >= 4, onChange: (value) => void toggleFavorite(action, value) }, action));
+                }) }))] }));
 }
 
 var EHIDKeyboardKey;
@@ -425,8 +455,10 @@ function Content() {
     const [loaded, setLoaded] = SP_REACT.useState(false);
     const [busyAction, setBusyAction] = SP_REACT.useState(null);
     const [showDiagnostics, setShowDiagnostics] = SP_REACT.useState(false);
+    const [showSettings, setShowSettings] = SP_REACT.useState(false);
     const [diagnostics, setDiagnostics] = SP_REACT.useState(null);
     const [artwork, setArtwork] = SP_REACT.useState(null);
+    const [settings, setSettings] = SP_REACT.useState(null);
     const updateSession = SP_REACT.useCallback(async () => {
         try {
             setSession(await getCurrentSession());
@@ -447,18 +479,23 @@ function Content() {
         }
     }, []);
     SP_REACT.useEffect(() => {
+        void getSettings()
+            .then(setSettings)
+            .catch((error) => toaster.toast({ title: "Settings unavailable", body: String(error) }));
+    }, []);
+    SP_REACT.useEffect(() => {
         let disposed = false;
         const poll = async () => {
             if (!disposed)
                 await updateSession();
         };
         void poll();
-        const timer = window.setInterval(() => void poll(), 1500);
+        const timer = window.setInterval(() => void poll(), settings?.detection_interval_ms ?? 1500);
         return () => {
             disposed = true;
             window.clearInterval(timer);
         };
-    }, [updateSession]);
+    }, [settings?.detection_interval_ms, updateSession]);
     SP_REACT.useEffect(() => {
         let disposed = false;
         setArtwork(null);
@@ -485,7 +522,9 @@ function Content() {
                 window.setTimeout(() => {
                     try {
                         pressHotkeys(result.keys ?? []);
-                        toaster.toast({ title: "EmuDeck Companion", body: result.message });
+                        if (settings?.notifications !== false) {
+                            toaster.toast({ title: "EmuDeck Companion", body: result.message });
+                        }
                     }
                     catch (error) {
                         toaster.toast({ title: "Action failed", body: String(error) });
@@ -493,10 +532,12 @@ function Content() {
                 }, 200);
             }
             else {
-                toaster.toast({
-                    title: result.ok ? "EmuDeck Companion" : "Action failed",
-                    body: result.message,
-                });
+                if (!result.ok || settings?.notifications !== false) {
+                    toaster.toast({
+                        title: result.ok ? "EmuDeck Companion" : "Action failed",
+                        body: result.message,
+                    });
+                }
                 await updateSession();
             }
         }
@@ -506,7 +547,15 @@ function Content() {
         finally {
             setBusyAction(null);
         }
-    }, [busyAction, updateSession]);
+    }, [busyAction, settings?.notifications, updateSession]);
+    const saveSettings = SP_REACT.useCallback(async (changes) => {
+        try {
+            setSettings(await updateSettings(changes));
+        }
+        catch (error) {
+            toaster.toast({ title: "Settings update failed", body: String(error) });
+        }
+    }, []);
     const manualRefresh = SP_REACT.useCallback(async () => {
         setSession(await refreshDetection());
         if (showDiagnostics)
@@ -515,7 +564,7 @@ function Content() {
     if (!loaded) {
         return SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.PanelSectionRow, { children: "Detecting active emulator\u2026" }) });
     }
-    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [session ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(GameHeader, { session: session, artwork: artwork }) }) }), SP_JSX.jsx(EmulatorActions, { session: session, busyAction: busyAction, onAction: onAction })] })) : (SP_JSX.jsxs(DFL.PanelSection, { title: "EmuDeck Companion", children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: { width: "100%", padding: "8px 0", opacity: 0.72 }, children: "No active emulation session" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => void manualRefresh(), children: "Refresh Detection" }) })] })), SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setShowDiagnostics((value) => !value), children: showDiagnostics ? "Hide Diagnostics" : "Show Diagnostics" }) }) }), showDiagnostics && diagnostics && SP_JSX.jsx(Diagnostics, { data: diagnostics, onRefresh: manualRefresh })] }));
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [session ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(GameHeader, { session: session, artwork: artwork, settings: settings }) }) }), SP_JSX.jsx(EmulatorActions, { session: session, favorites: settings?.favorites[session.emulator] ?? [], busyAction: busyAction, onAction: onAction })] })) : (SP_JSX.jsxs(DFL.PanelSection, { title: "EmuDeck Companion", children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: { width: "100%", padding: "8px 0", opacity: 0.72 }, children: "No active emulation session" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => void manualRefresh(), children: "Refresh Detection" }) })] })), SP_JSX.jsxs(DFL.PanelSection, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setShowSettings((value) => !value), children: showSettings ? "Hide Settings" : "Show Settings" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setShowDiagnostics((value) => !value), children: showDiagnostics ? "Hide Diagnostics" : "Show Diagnostics" }) })] }), showSettings && settings && (SP_JSX.jsx(Settings, { settings: settings, session: session, onChange: saveSettings })), showDiagnostics && diagnostics && SP_JSX.jsx(Diagnostics, { data: diagnostics, onRefresh: manualRefresh })] }));
 }
 var index = definePlugin(() => ({
     name: "EmuDeck Companion",
