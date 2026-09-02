@@ -55,6 +55,7 @@ export interface EmulatorSession {
 }
 
 export interface ActionResult {
+  request_id?: string;
   ok: boolean;
   action: string;
   message: string;
@@ -89,6 +90,18 @@ export interface GameOverride {
 }
 
 export interface DiagnosticsData {
+  plugin_version?: string;
+  action_history?: Array<{
+    id: string;
+    timestamp: number;
+    action: string;
+    emulator: string | null;
+    game: string | null;
+    pid: number | null;
+    dispatch: string;
+    status: "pending" | "sent" | "failed" | "unknown" | "completed";
+    message: string;
+  }>;
   timestamp: number;
   system: string;
   emudeck: EmuDeckStatus;

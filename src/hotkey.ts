@@ -1,5 +1,6 @@
 import { SteamClient } from "@decky/ui/dist/globals/steam-client";
 import { EHIDKeyboardKey } from "@decky/ui/dist/globals/steam-client/Input";
+import { pressChord } from "./actionDelivery";
 
 declare const SteamClient: SteamClient;
 
@@ -72,17 +73,15 @@ const keys: Record<string, EHIDKeyboardKey> = {
   leftctrl: EHIDKeyboardKey.LControl,
 };
 
-export function pressHotkeys(names: string[]): void {
+export async function pressHotkeys(names: string[]): Promise<void> {
   const mapped = names.map((name) => {
     const key = keys[name.toLowerCase()];
     if (key === undefined) throw new Error(`Unsupported Steam Input key: ${name}`);
     return key;
   });
 
-  mapped.forEach((key) => SteamClient.Input.ControllerKeyboardSetKeyState(key, true));
-  window.setTimeout(() => {
-    [...mapped].reverse().forEach((key) =>
-      SteamClient.Input.ControllerKeyboardSetKeyState(key, false),
-    );
-  }, 100);
+  await pressChord(mapped,
+    (key, pressed) => SteamClient.Input.ControllerKeyboardSetKeyState(key, pressed),
+    () => new Promise<void>((resolve) => window.setTimeout(resolve, 100)),
+  );
 }

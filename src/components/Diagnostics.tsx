@@ -3,7 +3,15 @@ import { toaster } from "@decky/api";
 import { exportDiagnostics } from "../api/backend";
 import type { DiagnosticsData } from "../types";
 
-export function Diagnostics({ data, onRefresh }: { data: DiagnosticsData; onRefresh: () => Promise<void> }) {
+export function Diagnostics({ data, onRefresh, onUpdate }: {
+  data: DiagnosticsData;
+  onRefresh: () => Promise<void>;
+  onUpdate: () => Promise<void>;
+}) {
+  const statusLabels = {
+    pending: "Waiting for keyboard", sent: "Sent (unconfirmed)", failed: "Failed",
+    unknown: "Delivery unknown", completed: "Local selection updated",
+  };
   const copyDiagnostics = async () => {
     try {
       if (!navigator.clipboard?.writeText) throw new Error("Clipboard API unavailable");
@@ -24,6 +32,7 @@ export function Diagnostics({ data, onRefresh }: { data: DiagnosticsData; onRefr
   };
 
   const rows: Array<[string, string]> = [
+    ["Plugin version", data.plugin_version ?? "unknown"],
     ["EmuDeck", data.emudeck.detected ? "Detected" : "Not detected"],
     ["ES-DE", data.emudeck.esde_detected ? "Detected" : "Not detected"],
     ["Emulator", data.session?.emulator_name ?? "None"],
@@ -74,6 +83,25 @@ export function Diagnostics({ data, onRefresh }: { data: DiagnosticsData; onRefr
           </div>
         </PanelSectionRow>
       ))}
+      {(data.action_history?.length ?? 0) > 0 && (
+        <PanelSectionRow>
+          <div style={{ width: "100%", fontSize: "12px", overflowWrap: "anywhere" }}>
+            <div style={{ opacity: 0.55 }}>Recent actions — latest 5 of {data.action_history?.length} (export includes all)</div>
+            {data.action_history?.slice(0, 5).map((entry) => (
+              <div key={entry.id} style={{ marginTop: "10px" }}>
+                <div>{new Date(entry.timestamp * 1000).toLocaleTimeString()} — {entry.action} — {statusLabels[entry.status]}</div>
+                <div style={{ opacity: 0.7 }}>{[entry.emulator, entry.game, entry.dispatch].filter(Boolean).join(" • ")}</div>
+                <div>{entry.message}</div>
+              </div>
+            ))}
+          </div>
+        </PanelSectionRow>
+      )}
+      <PanelSectionRow>
+        <ButtonItem layout="below" onClick={() => void onUpdate()}>
+          Refresh Diagnostics
+        </ButtonItem>
+      </PanelSectionRow>
       <PanelSectionRow>
         <ButtonItem layout="below" onClick={() => void onRefresh()}>
           Refresh Detection

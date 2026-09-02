@@ -18,6 +18,7 @@ if _plugin_import_root not in sys.path:
     sys.path.insert(0, _plugin_import_root)
 
 from companion_action_engine import ActionEngine
+from companion_action_history import ActionHistory
 from companion_diagnostics import build_diagnostics
 from companion_document_server import DocumentServer
 from companion_documents import DocumentIndex
@@ -38,6 +39,11 @@ from companion_session import SessionManager
 class Plugin:
     async def _main(self) -> None:
         plugin_dir = Path(decky.DECKY_PLUGIN_DIR)
+        try:
+            version = json.loads((plugin_dir / "package.json").read_text(encoding="utf-8")).get("version")
+            self.plugin_version = version[:80] if isinstance(version, str) else "unknown"
+        except (OSError, ValueError, AttributeError):
+            self.plugin_version = "unknown"
         profile_dir = plugin_dir / "emulators"
         if not profile_dir.is_dir():
             # In a source checkout profiles live under defaults/. Decky's release
@@ -68,11 +74,11 @@ class Plugin:
             profile_provider=self._resolve_hotkey_profile,
         )
         self.action_engine = ActionEngine(frontend_input=True, native_commands=self.retroarch_commands)
-        self.last_action: dict[str, Any] | None = None
+        self.action_history = ActionHistory()
         self.settings_path = Path(decky.DECKY_PLUGIN_SETTINGS_DIR) / "settings.json"
         self.settings = self._load_settings()
         self._lock = asyncio.Lock()
-        decky.logger.info("EmuDeck Companion loaded with %d profiles", len(self.profile_store.profiles))
+        decky.logger.info("EmuDeck Companion %s loaded with %d profiles", self.plugin_version, len(self.profile_store.profiles))
 
     def _resolve_hotkey_profile(self, profile: dict[str, Any], process: ProcessInfo) -> dict[str, Any]:
         original = profile
@@ -268,10 +274,18 @@ class Plugin:
                 result = ActionResult(False, action, "Action hidden by this game's settings")
             else:
                 result = await self.action_engine.execute(session, action)
-            self.last_action = result.as_dict()
+            payload = self.action_history.record(result, session)
             log = decky.logger.info if result.ok else decky.logger.warning
-            log("Action %s: %s", action, result.message)
-            return self.last_action
+            log("Action %s [%s; %s]: %s", action, payload["request_id"], result.dispatch, result.message)
+            return payload
+
+    async def report_keyboard_delivery(self, request_id: str, delivered: bool, error: str = "") -> dict[str, bool]:
+        async with self._lock:
+            accepted = self.action_history.report_keyboard(request_id, delivered, error)
+            if accepted:
+                log = decky.logger.info if delivered else decky.logger.warning
+                log("Keyboard dispatch %s: %s", request_id, "sent (execution unconfirmed)" if delivered else error[:250])
+            return {"ok": accepted}
 
     async def refresh_detection(self) -> dict[str, Any] | None:
         async with self._lock:
@@ -294,6 +308,7 @@ class Plugin:
 
     def _build_diagnostics(self) -> dict[str, Any]:
         session = self.session_manager.refresh()
+        history = self.action_history.snapshot()
         backend_name = (
             "SteamClient.Input"
             if self.action_engine.frontend_input
@@ -305,9 +320,11 @@ class Plugin:
             session_payload(session, self.settings) if session else None,
             self.emudeck,
             backend_name,
-            self.last_action,
+            history["last_action"],
         )
         diagnostics["document_server"] = self.document_server.diagnostics()
+        diagnostics["plugin_version"] = self.plugin_version
+        diagnostics["action_history"] = history["action_history"]
         return diagnostics
 
     async def get_diagnostics(self) -> dict[str, Any]:

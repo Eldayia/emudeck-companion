@@ -87,6 +87,7 @@ const getCurrentSession = callable("get_current_session");
 const getArtwork = callable("get_artwork");
 const getDocumentUrl = callable("get_document_url");
 const executeAction = callable("execute_action");
+const reportKeyboardDelivery = callable("report_keyboard_delivery");
 const refreshDetection = callable("refresh_detection");
 const getDiagnostics = callable("get_diagnostics");
 const exportDiagnostics = callable("export_diagnostics");
@@ -95,7 +96,11 @@ const getSettings = callable("get_settings");
 const updateSettings = callable("update_settings");
 const configureRetroArchNetwork = callable("configure_retroarch_network");
 
-function Diagnostics({ data, onRefresh }) {
+function Diagnostics({ data, onRefresh, onUpdate }) {
+    const statusLabels = {
+        pending: "Waiting for keyboard", sent: "Sent (unconfirmed)", failed: "Failed",
+        unknown: "Delivery unknown", completed: "Local selection updated",
+    };
     const copyDiagnostics = async () => {
         try {
             if (!navigator.clipboard?.writeText)
@@ -117,6 +122,7 @@ function Diagnostics({ data, onRefresh }) {
         }
     };
     const rows = [
+        ["Plugin version", data.plugin_version ?? "unknown"],
         ["EmuDeck", data.emudeck.detected ? "Detected" : "Not detected"],
         ["ES-DE", data.emudeck.esde_detected ? "Detected" : "Not detected"],
         ["Emulator", data.session?.emulator_name ?? "None"],
@@ -159,7 +165,7 @@ function Diagnostics({ data, onRefresh }) {
             rows.push([data.session?.actions[action]?.label ?? action, reason]);
         }
     }
-    return (SP_JSX.jsxs(DFL.PanelSection, { title: "Diagnostics", children: [rows.map(([label, value]) => (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: { width: "100%" }, children: [SP_JSX.jsx("div", { style: { opacity: 0.55, fontSize: "12px" }, children: label }), SP_JSX.jsx("div", { style: { overflowWrap: "anywhere" }, children: value })] }) }, label))), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => void onRefresh(), children: "Refresh Detection" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => void copyDiagnostics(), children: "Copy Diagnostics" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => void saveDiagnostics(), children: "Export Diagnostics" }) })] }));
+    return (SP_JSX.jsxs(DFL.PanelSection, { title: "Diagnostics", children: [rows.map(([label, value]) => (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: { width: "100%" }, children: [SP_JSX.jsx("div", { style: { opacity: 0.55, fontSize: "12px" }, children: label }), SP_JSX.jsx("div", { style: { overflowWrap: "anywhere" }, children: value })] }) }, label))), (data.action_history?.length ?? 0) > 0 && (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: { width: "100%", fontSize: "12px", overflowWrap: "anywhere" }, children: [SP_JSX.jsxs("div", { style: { opacity: 0.55 }, children: ["Recent actions \u2014 latest 5 of ", data.action_history?.length, " (export includes all)"] }), data.action_history?.slice(0, 5).map((entry) => (SP_JSX.jsxs("div", { style: { marginTop: "10px" }, children: [SP_JSX.jsxs("div", { children: [new Date(entry.timestamp * 1000).toLocaleTimeString(), " \u2014 ", entry.action, " \u2014 ", statusLabels[entry.status]] }), SP_JSX.jsx("div", { style: { opacity: 0.7 }, children: [entry.emulator, entry.game, entry.dispatch].filter(Boolean).join(" • ") }), SP_JSX.jsx("div", { children: entry.message })] }, entry.id)))] }) })), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => void onUpdate(), children: "Refresh Diagnostics" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => void onRefresh(), children: "Refresh Detection" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => void copyDiagnostics(), children: "Copy Diagnostics" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => void saveDiagnostics(), children: "Export Diagnostics" }) })] }));
 }
 
 function Documents({ documents }) {
@@ -701,6 +707,59 @@ var EControllerType;
     EControllerType[EControllerType["GenericMouse"] = 800] = "GenericMouse";
 })(EControllerType || (EControllerType = {}));
 
+async function deliverKeyboard(press, report) {
+    let error = "";
+    let ok = true;
+    try {
+        await press();
+    }
+    catch (failure) {
+        ok = false;
+        error = String(failure);
+    }
+    // Never resend input if its diagnostic acknowledgement fails.
+    try {
+        if (!(await report(ok, error)).ok)
+            return { ok, error, reportError: "Delivery report was not accepted" };
+    }
+    catch (failure) {
+        return { ok, error, reportError: String(failure) };
+    }
+    return { ok, error };
+}
+async function pressChord(keys, setState, wait) {
+    const attempted = [];
+    let failed = false;
+    let failure;
+    try {
+        for (const key of keys) {
+            // A thrown API call may already have applied its state.
+            attempted.push(key);
+            setState(key, true);
+        }
+        await wait();
+    }
+    catch (error) {
+        failed = true;
+        failure = error;
+    }
+    finally {
+        for (const key of attempted.reverse()) {
+            try {
+                setState(key, false);
+            }
+            catch (error) {
+                if (!failed) {
+                    failed = true;
+                    failure = error;
+                }
+            }
+        }
+    }
+    if (failed)
+        throw failure;
+}
+
 const keys = {
     "1": EHIDKeyboardKey.Key_1,
     "2": EHIDKeyboardKey.Key_2,
@@ -769,17 +828,14 @@ const keys = {
     leftshift: EHIDKeyboardKey.LShift,
     leftctrl: EHIDKeyboardKey.LControl,
 };
-function pressHotkeys(names) {
+async function pressHotkeys(names) {
     const mapped = names.map((name) => {
         const key = keys[name.toLowerCase()];
         if (key === undefined)
             throw new Error(`Unsupported Steam Input key: ${name}`);
         return key;
     });
-    mapped.forEach((key) => SteamClient.Input.ControllerKeyboardSetKeyState(key, true));
-    window.setTimeout(() => {
-        [...mapped].reverse().forEach((key) => SteamClient.Input.ControllerKeyboardSetKeyState(key, false));
-    }, 100);
+    await pressChord(mapped, (key, pressed) => SteamClient.Input.ControllerKeyboardSetKeyState(key, pressed), () => new Promise((resolve) => window.setTimeout(resolve, 100)));
 }
 
 function Content() {
@@ -847,20 +903,25 @@ function Content() {
         if (busyAction !== null)
             return;
         setBusyAction(action);
+        let pendingRequest;
         try {
             const result = await executeAction(action);
             if (result.ok && result.dispatch === "steam_input" && result.keys) {
+                pendingRequest = result.request_id;
                 DFL.Navigation.CloseSideMenus();
                 window.setTimeout(() => {
-                    try {
-                        pressHotkeys(result.keys ?? []);
-                        if (settings?.notifications !== false) {
-                            toaster.toast({ title: "EmuDeck Companion", body: result.message });
+                    void deliverKeyboard(() => pressHotkeys(result.keys ?? []), (delivered, error) => result.request_id
+                        ? reportKeyboardDelivery(result.request_id, delivered, error)
+                        : Promise.resolve({ ok: true })).then((delivery) => {
+                        if (delivery.reportError)
+                            console.error("Keyboard delivery report failed", delivery.reportError);
+                        if (!delivery.ok || settings?.notifications !== false) {
+                            toaster.toast({
+                                title: delivery.ok ? "EmuDeck Companion" : "Action failed",
+                                body: delivery.ok ? `${result.message} — input sent, execution not confirmed` : delivery.error,
+                            });
                         }
-                    }
-                    catch (error) {
-                        toaster.toast({ title: "Action failed", body: String(error) });
-                    }
+                    }).catch((error) => console.error("Keyboard action feedback failed", error));
                 }, 200);
             }
             else {
@@ -874,6 +935,10 @@ function Content() {
             }
         }
         catch (error) {
+            if (pendingRequest) {
+                void reportKeyboardDelivery(pendingRequest, false, String(error))
+                    .catch((failure) => console.error("Keyboard delivery report failed", failure));
+            }
             toaster.toast({ title: "Action failed", body: String(error) });
         }
         finally {
@@ -901,7 +966,7 @@ function Content() {
     if (!loaded) {
         return SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.PanelSectionRow, { children: "Detecting active emulator\u2026" }) });
     }
-    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [session ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(GameHeader, { session: session, artwork: artwork, settings: settings }) }) }), SP_JSX.jsx(EmulatorActions, { session: session, favorites: activeFavorites, compact: settings?.compact_actions ?? false, busyAction: busyAction, onAction: onAction }, `${session.emulator}:${session.pid}:${session.started_at}:${session.rom ?? ""}`), SP_JSX.jsx(Documents, { documents: session.documents }), SP_JSX.jsx(GameDetails, { metadata: session.metadata }, `${session.emulator}:${session.pid}:${session.started_at}:${session.rom ?? ""}`), SP_JSX.jsx(Hotkeys, { session: session })] })) : (SP_JSX.jsxs(DFL.PanelSection, { title: "EmuDeck Companion", children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: { width: "100%", padding: "8px 0", opacity: 0.72 }, children: "No active emulation session" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => void manualRefresh(), children: "Refresh Detection" }) })] })), SP_JSX.jsxs(DFL.PanelSection, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setShowSettings((value) => !value), children: showSettings ? "Hide Settings" : "Show Settings" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setShowDiagnostics((value) => !value), children: showDiagnostics ? "Hide Diagnostics" : "Show Diagnostics" }) })] }), showSettings && settings && (SP_JSX.jsx(Settings, { settings: settings, session: session, onChange: saveSettings })), showDiagnostics && diagnostics && SP_JSX.jsx(Diagnostics, { data: diagnostics, onRefresh: manualRefresh })] }));
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [session ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(GameHeader, { session: session, artwork: artwork, settings: settings }) }) }), SP_JSX.jsx(EmulatorActions, { session: session, favorites: activeFavorites, compact: settings?.compact_actions ?? false, busyAction: busyAction, onAction: onAction }, `${session.emulator}:${session.pid}:${session.started_at}:${session.rom ?? ""}`), SP_JSX.jsx(Documents, { documents: session.documents }), SP_JSX.jsx(GameDetails, { metadata: session.metadata }, `${session.emulator}:${session.pid}:${session.started_at}:${session.rom ?? ""}`), SP_JSX.jsx(Hotkeys, { session: session })] })) : (SP_JSX.jsxs(DFL.PanelSection, { title: "EmuDeck Companion", children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: { width: "100%", padding: "8px 0", opacity: 0.72 }, children: "No active emulation session" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => void manualRefresh(), children: "Refresh Detection" }) })] })), SP_JSX.jsxs(DFL.PanelSection, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setShowSettings((value) => !value), children: showSettings ? "Hide Settings" : "Show Settings" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setShowDiagnostics((value) => !value), children: showDiagnostics ? "Hide Diagnostics" : "Show Diagnostics" }) })] }), showSettings && settings && (SP_JSX.jsx(Settings, { settings: settings, session: session, onChange: saveSettings })), showDiagnostics && diagnostics && SP_JSX.jsx(Diagnostics, { data: diagnostics, onRefresh: manualRefresh, onUpdate: updateDiagnostics })] }));
 }
 var index = definePlugin(() => ({
     name: "EmuDeck Companion",

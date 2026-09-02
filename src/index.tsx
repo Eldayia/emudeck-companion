@@ -9,6 +9,7 @@ import {
   getDiagnostics,
   getSettings,
   refreshDetection,
+  reportKeyboardDelivery,
   updateSettings,
 } from "./api/backend";
 import { Diagnostics } from "./components/Diagnostics";
@@ -19,6 +20,7 @@ import { GameDetails } from "./components/GameDetails";
 import { Hotkeys } from "./components/Hotkeys";
 import { Settings } from "./components/Settings";
 import { pressHotkeys } from "./hotkey";
+import { deliverKeyboard } from "./actionDelivery";
 import type { CompanionSettings, DiagnosticsData, EmulatorSession } from "./types";
 
 function Content() {
@@ -86,19 +88,27 @@ function Content() {
   const onAction = useCallback(async (action: string) => {
     if (busyAction !== null) return;
     setBusyAction(action);
+    let pendingRequest: string | undefined;
     try {
       const result = await executeAction(action);
       if (result.ok && result.dispatch === "steam_input" && result.keys) {
+        pendingRequest = result.request_id;
         Navigation.CloseSideMenus();
         window.setTimeout(() => {
-          try {
-            pressHotkeys(result.keys ?? []);
-            if (settings?.notifications !== false) {
-              toaster.toast({ title: "EmuDeck Companion", body: result.message });
+          void deliverKeyboard(
+            () => pressHotkeys(result.keys ?? []),
+            (delivered, error) => result.request_id
+              ? reportKeyboardDelivery(result.request_id, delivered, error)
+              : Promise.resolve({ ok: true }),
+          ).then((delivery) => {
+            if (delivery.reportError) console.error("Keyboard delivery report failed", delivery.reportError);
+            if (!delivery.ok || settings?.notifications !== false) {
+              toaster.toast({
+                title: delivery.ok ? "EmuDeck Companion" : "Action failed",
+                body: delivery.ok ? `${result.message} — input sent, execution not confirmed` : delivery.error,
+              });
             }
-          } catch (error) {
-            toaster.toast({ title: "Action failed", body: String(error) });
-          }
+          }).catch((error) => console.error("Keyboard action feedback failed", error));
         }, 200);
       } else {
         if (!result.ok || settings?.notifications !== false) {
@@ -110,6 +120,10 @@ function Content() {
         await updateSession();
       }
     } catch (error) {
+      if (pendingRequest) {
+        void reportKeyboardDelivery(pendingRequest, false, String(error))
+          .catch((failure) => console.error("Keyboard delivery report failed", failure));
+      }
       toaster.toast({ title: "Action failed", body: String(error) });
     } finally {
       setBusyAction(null);
@@ -192,7 +206,7 @@ function Content() {
       {showSettings && settings && (
         <Settings settings={settings} session={session} onChange={saveSettings} />
       )}
-      {showDiagnostics && diagnostics && <Diagnostics data={diagnostics} onRefresh={manualRefresh} />}
+      {showDiagnostics && diagnostics && <Diagnostics data={diagnostics} onRefresh={manualRefresh} onUpdate={updateDiagnostics} />}
     </>
   );
 }

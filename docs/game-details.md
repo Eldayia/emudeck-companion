@@ -29,6 +29,10 @@ the session and reload it. Merely reopening Game Details does not rescrape.
 
 ## Test on Steam Deck
 
+The user reported this feature working on their Steam Deck with version 0.18.0
+on 2026-09-02. This is a smoke-test report, not validation of every metadata
+format, description length or controller.
+
 Launch a game whose metadata has been scraped in ES-DE. Open **Show Game Details**,
 check the populated fields, then page through a long description with the
 controller. Verify **Hide Game Details**, and that a different game starts
