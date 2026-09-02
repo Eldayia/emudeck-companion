@@ -86,7 +86,14 @@ class PluginIntegrationTests(unittest.IsolatedAsyncioTestCase):
                     actions={"fast_forward": {"label": "Fast Forward", "method": "hotkey", "keys": ["tab"]}},
                     started_at=1.0,
                 ))
-                hidden_result = await plugin.execute_action("fast_forward")
+                active_id = plugin.session_manager.refresh().session_id
+                with patch.object(plugin.action_engine, "execute") as dispatch:
+                    for stale_id in (None, "old-session"):
+                        rejected = await plugin.execute_action("fast_forward", stale_id)
+                        self.assertFalse(rejected["ok"])
+                        self.assertIn("Session changed", rejected["message"])
+                    dispatch.assert_not_called()
+                hidden_result = await plugin.execute_action("fast_forward", active_id)
                 self.assertFalse(hidden_result["ok"])
                 self.assertEqual(hidden_result["message"], "Action hidden by this game's settings")
                 persisted = json.loads(Path(directory, "settings.json").read_text(encoding="utf-8"))
@@ -103,7 +110,7 @@ class PluginIntegrationTests(unittest.IsolatedAsyncioTestCase):
                 self.assertEqual(report["action_history"][0]["status"], "failed")
                 self.assertEqual(report["action_history"][0]["id"], hidden_result["request_id"])
                 await plugin.update_settings({"game_overrides": {}})
-                keyboard_result = await plugin.execute_action("fast_forward")
+                keyboard_result = await plugin.execute_action("fast_forward", active_id)
                 self.assertEqual((await plugin.get_diagnostics())["action_history"][0]["status"], "pending")
                 self.assertTrue((await plugin.report_keyboard_delivery(keyboard_result["request_id"], False, "test dispatch error"))["ok"])
                 self.assertFalse((await plugin.get_diagnostics())["last_action"]["ok"])

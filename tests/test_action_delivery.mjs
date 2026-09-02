@@ -6,7 +6,7 @@ const source = await readFile(new URL("../src/actionDelivery.ts", import.meta.ur
 const compiled = ts.transpileModule(source, {
   compilerOptions: { target: ts.ScriptTarget.ES2020, module: ts.ModuleKind.ESNext },
 }).outputText;
-const { deliverKeyboard, pressChord } = await import(`data:text/javascript;base64,${Buffer.from(compiled).toString("base64")}`);
+const { deliverKeyboard, pressChord, inCurrentSession } = await import(`data:text/javascript;base64,${Buffer.from(compiled).toString("base64")}`);
 let passed = 0;
 async function test(name, run) { await run(); passed++; console.log(`OK ${name}`); }
 
@@ -64,5 +64,29 @@ await test("Failed wait still releases the chord", async () => {
     throw new Error("timer failed");
   }), /timer failed/);
   assert.deepEqual(calls, [["f2", true], ["f2", false]]);
+});
+await test("Session is rechecked immediately before keyboard input", async () => {
+  const calls = [];
+  await inCurrentSession("one", async () => { calls.push("check"); return { session_id: "one" }; }, async () => { calls.push("press"); });
+  assert.deepEqual(calls, ["check", "press"]);
+});
+await test("Missing or changed session never sends keys", async () => {
+  for (const current of [null, { session_id: "two" }]) {
+    let presses = 0;
+    await assert.rejects(inCurrentSession("one", async () => current, async () => { presses++; }), /Session changed/);
+    assert.equal(presses, 0);
+  }
+  await assert.rejects(inCurrentSession("", async () => ({ session_id: "" }), async () => {}), /Session changed/);
+});
+await test("A failed session recheck is reported without any input or retry", async () => {
+  let presses = 0;
+  let reported;
+  const outcome = await deliverKeyboard(
+    () => inCurrentSession("one", async () => { throw new Error("RPC failed"); }, async () => { presses++; }),
+    async (ok, error) => { reported = { ok, error }; return { ok: true }; },
+  );
+  assert.equal(outcome.ok, false);
+  assert.equal(presses, 0);
+  assert.equal(reported.ok, false);
 });
 console.log(`${passed} action delivery tests passed`);

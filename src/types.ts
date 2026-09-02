@@ -6,6 +6,8 @@ export interface ActionDefinition {
   binding_source?: string;
 }
 export interface EmulatorSession {
+  session_id: string;
+  process_started_ticks: number | null;
   emulator: string;
   emulator_name: string;
   pid: number;
@@ -98,6 +100,7 @@ export interface DiagnosticsData {
     emulator: string | null;
     game: string | null;
     pid: number | null;
+    session_id?: string | null;
     dispatch: string;
     status: "pending" | "sent" | "failed" | "unknown" | "completed";
     message: string;

@@ -6,7 +6,7 @@ It does not replace EmuDeck and does not require EmuDecky.
 
 ## Current status
 
-Version 0.19.0 includes:
+Version 0.20.0 includes:
 
 Enable **Show Settings → Compact actions** for up to four favorites or common
 actions, with **Show All Actions** to expand the full list. The setting is off
@@ -17,6 +17,9 @@ when available. See the [game-details guide](docs/game-details.md).
 
 Diagnostics includes the plugin version and a bounded action-delivery history,
 including frontend keyboard failures. See [action diagnostics](docs/action-diagnostics.md).
+
+Session changes reset game-specific state and reject stale action requests. See
+[session lifecycle and ES-DE integration plans](docs/session-lifecycle.md).
 
 - automatic process and ROM detection through `/proc`;
 - data-driven profiles for Cemu, DuckStation, PCSX2, Dolphin, RetroArch,

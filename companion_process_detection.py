@@ -7,14 +7,28 @@ from typing import Iterable
 from companion_models import ProcessInfo
 
 
+def _started_ticks(raw: str, pid: int) -> int:
+    # Field 2 is parenthesized and may contain spaces or parentheses itself.
+    head, separator, tail = raw.rpartition(") ")
+    fields = tail.split()
+    if not separator or not head.startswith(f"{pid} (") or len(fields) < 20:
+        raise ValueError("Incomplete process stat")
+    value = int(fields[19])  # Field 22, after fields pid and comm.
+    if value < 0:
+        raise ValueError("Invalid process start time")
+    return value
+
+
 def _read_process(proc_dir: Path) -> ProcessInfo | None:
     try:
+        pid = int(proc_dir.name)
+        started_ticks = _started_ticks((proc_dir / "stat").read_text(encoding="utf-8"), pid)
         raw = (proc_dir / "cmdline").read_bytes()
         argv = tuple(item.decode("utf-8", "replace") for item in raw.split(b"\0") if item)
         comm = (proc_dir / "comm").read_text(encoding="utf-8").strip()
-        stat = (proc_dir / "stat").read_text(encoding="utf-8").split()
-        started_ticks = int(stat[21]) if len(stat) > 21 else None
-        return ProcessInfo(int(proc_dir.name), comm, argv, started_ticks)
+        if _started_ticks((proc_dir / "stat").read_text(encoding="utf-8"), pid) != started_ticks:
+            return None
+        return ProcessInfo(pid, comm, argv, started_ticks)
     except (FileNotFoundError, PermissionError, ProcessLookupError, OSError, ValueError):
         return None
 

@@ -267,10 +267,12 @@ class Plugin:
                 return None
             return self.document_server.url_for(Path(document["path"]))
 
-    async def execute_action(self, action: str) -> dict[str, Any]:
+    async def execute_action(self, action: str, session_id: str | None = None) -> dict[str, Any]:
         async with self._lock:
             session = self.session_manager.refresh()
-            if session is not None and action in hidden_actions(session, self.settings):
+            if session is not None and session_id != session.session_id:
+                result = ActionResult(False, action, "Session changed or missing; refresh Companion before sending this action")
+            elif session is not None and action in hidden_actions(session, self.settings):
                 result = ActionResult(False, action, "Action hidden by this game's settings")
             else:
                 result = await self.action_engine.execute(session, action)

@@ -23,6 +23,7 @@ class ActionEngine:
         self.native_commands = native_commands
         self.debounce_seconds = debounce_ms / 1000
         self._last_actions: dict[str, float] = {}
+        self._debounce_session: str | None = None
 
     async def execute(self, session: Session | None, action: str) -> ActionResult:
         if session is None:
@@ -30,7 +31,10 @@ class ActionEngine:
         if action not in session.capabilities or action not in session.actions:
             return ActionResult(False, action, f"{session.emulator_name} does not support this action")
         now = time.monotonic()
-        debounce_key = f"{session.pid}:{action}"
+        if self._debounce_session != session.session_id:
+            self._last_actions.clear()
+            self._debounce_session = session.session_id
+        debounce_key = action
         if now - self._last_actions.get(debounce_key, 0) < self.debounce_seconds:
             return ActionResult(False, action, "Action ignored to prevent a double trigger")
         self._last_actions[debounce_key] = now

@@ -44,6 +44,7 @@ class ActionHistory:
             "emulator": session.emulator[:80] if session else None,
             "game": session.game[:160] if session and session.game else None,
             "pid": session.pid if session else None, "dispatch": result.dispatch,
+            "session_id": session.session_id if session else None,
             "status": status, "message": message[:400],
             "_deadline": self.clock() + 15,
         }

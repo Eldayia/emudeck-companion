@@ -20,7 +20,7 @@ import { GameDetails } from "./components/GameDetails";
 import { Hotkeys } from "./components/Hotkeys";
 import { Settings } from "./components/Settings";
 import { pressHotkeys } from "./hotkey";
-import { deliverKeyboard } from "./actionDelivery";
+import { deliverKeyboard, inCurrentSession } from "./actionDelivery";
 import type { CompanionSettings, DiagnosticsData, EmulatorSession } from "./types";
 
 function Content() {
@@ -86,17 +86,18 @@ function Content() {
   }, [showDiagnostics, updateDiagnostics]);
 
   const onAction = useCallback(async (action: string) => {
-    if (busyAction !== null) return;
+    if (busyAction !== null || !session) return;
     setBusyAction(action);
     let pendingRequest: string | undefined;
     try {
-      const result = await executeAction(action);
+      const expectedSession = session.session_id;
+      const result = await executeAction(action, expectedSession);
       if (result.ok && result.dispatch === "steam_input" && result.keys) {
         pendingRequest = result.request_id;
         Navigation.CloseSideMenus();
         window.setTimeout(() => {
           void deliverKeyboard(
-            () => pressHotkeys(result.keys ?? []),
+            () => inCurrentSession(expectedSession, getCurrentSession, () => pressHotkeys(result.keys ?? [])),
             (delivered, error) => result.request_id
               ? reportKeyboardDelivery(result.request_id, delivered, error)
               : Promise.resolve({ ok: true }),
@@ -128,7 +129,7 @@ function Content() {
     } finally {
       setBusyAction(null);
     }
-  }, [busyAction, settings?.notifications, updateSession]);
+  }, [busyAction, session, settings?.notifications, updateSession]);
 
   const saveSettings = useCallback(async (changes: Partial<CompanionSettings>) => {
     try {
@@ -163,7 +164,7 @@ function Content() {
             </PanelSectionRow>
           </PanelSection>
           <EmulatorActions
-            key={`${session.emulator}:${session.pid}:${session.started_at}:${session.rom ?? ""}`}
+            key={session.session_id}
             session={session}
             favorites={activeFavorites}
             compact={settings?.compact_actions ?? false}
@@ -172,7 +173,7 @@ function Content() {
           />
           <Documents documents={session.documents} />
           <GameDetails
-            key={`${session.emulator}:${session.pid}:${session.started_at}:${session.rom ?? ""}`}
+            key={session.session_id}
             metadata={session.metadata}
           />
           <Hotkeys session={session} />

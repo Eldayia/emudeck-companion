@@ -60,6 +60,16 @@ class ActionEngineTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(first.active)
         self.assertFalse(second.active)
 
+    async def test_debounce_is_scoped_to_session_not_reused_pid(self):
+        engine = ActionEngine(FakeInputBackend(), debounce_ms=10000)
+        first = make_session()
+        self.assertTrue((await engine.execute(first, "save_state")).ok)
+        self.assertFalse((await engine.execute(first, "save_state")).ok)
+        second = make_session()
+        self.assertEqual(second.pid, first.pid)
+        self.assertTrue((await engine.execute(second, "save_state")).ok)
+        self.assertEqual(len(engine._last_actions), 1)
+
     async def test_select_slot_needs_no_input_backend(self):
         session = make_session()
         session.actions["slot_next"]["method"] = "select_slot"

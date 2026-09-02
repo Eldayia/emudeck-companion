@@ -4,7 +4,7 @@ import type { ActionResult, CompanionSettings, DiagnosticsData, EmulatorSession 
 export const getCurrentSession = callable<[], EmulatorSession | null>("get_current_session");
 export const getArtwork = callable<[], string | null>("get_artwork");
 export const getDocumentUrl = callable<[documentId: string], string | null>("get_document_url");
-export const executeAction = callable<[action: string], ActionResult>("execute_action");
+export const executeAction = callable<[action: string, sessionId: string], ActionResult>("execute_action");
 export const reportKeyboardDelivery = callable<
   [requestId: string, delivered: boolean, error: string], { ok: boolean }
 >("report_keyboard_delivery");

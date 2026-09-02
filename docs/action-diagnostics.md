@@ -7,6 +7,7 @@ the same plugin run. Use **Refresh Diagnostics** to update this view without
 recreating the session; **Refresh Detection** still performs the full rescan.
 
 Each entry includes its request ID, request timestamp, emulator, game title, PID,
+and (since 0.20.0) the session ID observed by the backend,
 action, dispatch method, status and a bounded message. The history is held only
 in memory, capped at 30 entries and reset when the plugin restarts. It is not a
 permanent play history and is not sent anywhere. An exported JSON file remains
@@ -34,8 +35,10 @@ overwrite the latest action summary. Reporting never executes or retries an
 action. If the reporting RPC fails after a shortcut was sent, the frontend keeps
 that separate from an input error; history eventually says delivery unknown.
 
-The normal shortcut timing remains unchanged: close the QAM, wait 200 ms, hold
-the chord for 100 ms, then release in reverse order. On a press or release error,
+Keyboard shortcuts close the QAM and wait 200 ms. Since 0.20.0, the frontend then
+rechecks the session before sending keys; a changed or unreadable session fails
+without sending the chord. The chord is held for 100 ms and released in reverse
+order. On a press or release error,
 the frontend attempts release for every attempted key and reports the error.
 The key mappings, emulator bindings and RetroArch UDP command transport are
 unchanged. Slot and toggle indicators remain estimates, not synchronized state.

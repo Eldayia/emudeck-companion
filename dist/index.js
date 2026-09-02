@@ -127,6 +127,8 @@ function Diagnostics({ data, onRefresh, onUpdate }) {
         ["ES-DE", data.emudeck.esde_detected ? "Detected" : "Not detected"],
         ["Emulator", data.session?.emulator_name ?? "None"],
         ["PID", data.session?.pid.toString() ?? "—"],
+        ["Session ID", data.session?.session_id ?? "—"],
+        ["Process start ticks", data.session?.process_started_ticks?.toString() ?? "—"],
         ["Game", data.session?.game ?? "—"],
         ["ROM", data.session?.rom ?? "—"],
         ["Input backend", data.input_backend],
@@ -759,6 +761,12 @@ async function pressChord(keys, setState, wait) {
     if (failed)
         throw failure;
 }
+async function inCurrentSession(expected, readSession, press) {
+    if (!expected || (await readSession())?.session_id !== expected) {
+        throw new Error("Session changed before keyboard dispatch; refresh Companion");
+    }
+    await press();
+}
 
 const keys = {
     "1": EHIDKeyboardKey.Key_1,
@@ -900,17 +908,18 @@ function Content() {
             void updateDiagnostics();
     }, [showDiagnostics, updateDiagnostics]);
     const onAction = SP_REACT.useCallback(async (action) => {
-        if (busyAction !== null)
+        if (busyAction !== null || !session)
             return;
         setBusyAction(action);
         let pendingRequest;
         try {
-            const result = await executeAction(action);
+            const expectedSession = session.session_id;
+            const result = await executeAction(action, expectedSession);
             if (result.ok && result.dispatch === "steam_input" && result.keys) {
                 pendingRequest = result.request_id;
                 DFL.Navigation.CloseSideMenus();
                 window.setTimeout(() => {
-                    void deliverKeyboard(() => pressHotkeys(result.keys ?? []), (delivered, error) => result.request_id
+                    void deliverKeyboard(() => inCurrentSession(expectedSession, getCurrentSession, () => pressHotkeys(result.keys ?? [])), (delivered, error) => result.request_id
                         ? reportKeyboardDelivery(result.request_id, delivered, error)
                         : Promise.resolve({ ok: true })).then((delivery) => {
                         if (delivery.reportError)
@@ -944,7 +953,7 @@ function Content() {
         finally {
             setBusyAction(null);
         }
-    }, [busyAction, settings?.notifications, updateSession]);
+    }, [busyAction, session, settings?.notifications, updateSession]);
     const saveSettings = SP_REACT.useCallback(async (changes) => {
         try {
             setSettings(await updateSettings(changes));
@@ -966,7 +975,7 @@ function Content() {
     if (!loaded) {
         return SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.PanelSectionRow, { children: "Detecting active emulator\u2026" }) });
     }
-    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [session ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(GameHeader, { session: session, artwork: artwork, settings: settings }) }) }), SP_JSX.jsx(EmulatorActions, { session: session, favorites: activeFavorites, compact: settings?.compact_actions ?? false, busyAction: busyAction, onAction: onAction }, `${session.emulator}:${session.pid}:${session.started_at}:${session.rom ?? ""}`), SP_JSX.jsx(Documents, { documents: session.documents }), SP_JSX.jsx(GameDetails, { metadata: session.metadata }, `${session.emulator}:${session.pid}:${session.started_at}:${session.rom ?? ""}`), SP_JSX.jsx(Hotkeys, { session: session })] })) : (SP_JSX.jsxs(DFL.PanelSection, { title: "EmuDeck Companion", children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: { width: "100%", padding: "8px 0", opacity: 0.72 }, children: "No active emulation session" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => void manualRefresh(), children: "Refresh Detection" }) })] })), SP_JSX.jsxs(DFL.PanelSection, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setShowSettings((value) => !value), children: showSettings ? "Hide Settings" : "Show Settings" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setShowDiagnostics((value) => !value), children: showDiagnostics ? "Hide Diagnostics" : "Show Diagnostics" }) })] }), showSettings && settings && (SP_JSX.jsx(Settings, { settings: settings, session: session, onChange: saveSettings })), showDiagnostics && diagnostics && SP_JSX.jsx(Diagnostics, { data: diagnostics, onRefresh: manualRefresh, onUpdate: updateDiagnostics })] }));
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [session ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(GameHeader, { session: session, artwork: artwork, settings: settings }) }) }), SP_JSX.jsx(EmulatorActions, { session: session, favorites: activeFavorites, compact: settings?.compact_actions ?? false, busyAction: busyAction, onAction: onAction }, session.session_id), SP_JSX.jsx(Documents, { documents: session.documents }), SP_JSX.jsx(GameDetails, { metadata: session.metadata }, session.session_id), SP_JSX.jsx(Hotkeys, { session: session })] })) : (SP_JSX.jsxs(DFL.PanelSection, { title: "EmuDeck Companion", children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: { width: "100%", padding: "8px 0", opacity: 0.72 }, children: "No active emulation session" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => void manualRefresh(), children: "Refresh Detection" }) })] })), SP_JSX.jsxs(DFL.PanelSection, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setShowSettings((value) => !value), children: showSettings ? "Hide Settings" : "Show Settings" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setShowDiagnostics((value) => !value), children: showDiagnostics ? "Hide Diagnostics" : "Show Diagnostics" }) })] }), showSettings && settings && (SP_JSX.jsx(Settings, { settings: settings, session: session, onChange: saveSettings })), showDiagnostics && diagnostics && SP_JSX.jsx(Diagnostics, { data: diagnostics, onRefresh: manualRefresh, onUpdate: updateDiagnostics })] }));
 }
 var index = definePlugin(() => ({
     name: "EmuDeck Companion",

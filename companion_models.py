@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from dataclasses import asdict, dataclass, field
 from typing import Any
+from uuid import uuid4
 
 
 @dataclass(frozen=True)
@@ -32,6 +33,8 @@ class Session:
     savestates: list[dict[str, Any]] = field(default_factory=list)
     documents: list[dict[str, Any]] = field(default_factory=list)
     hotkey_config: dict[str, Any] = field(default_factory=dict)
+    session_id: str = field(default_factory=lambda: uuid4().hex)
+    process_started_ticks: int | None = None
 
     def as_dict(self) -> dict[str, Any]:
         return asdict(self)

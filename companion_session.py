@@ -54,7 +54,13 @@ class SessionManager:
         profile, process = detected
         if self.profile_provider:
             profile = self.profile_provider(profile, process)
-        if self.current is not None and self.current.pid == process.pid:
+        if (
+            self.current is not None
+            and self.current.pid == process.pid
+            and self.current.process_started_ticks == process.started_ticks
+            and self.current.emulator == profile["id"]
+            and self.current.argv == list(process.argv)
+        ):
             capabilities = contextual_capabilities(profile, self.current.rom)
             if len(self.current.discs) <= 1:
                 capabilities = [a for a in capabilities if a not in {"previous_disc", "next_disc", "disk_eject"}]
@@ -94,6 +100,7 @@ class SessionManager:
             savestates=self.savestate_provider(profile, rom) if self.savestate_provider else [],
             documents=self.document_provider(rom, metadata) if self.document_provider else [],
             hotkey_config=profile.get("hotkey_config", {}),
+            process_started_ticks=process.started_ticks,
         )
         return self.current
 

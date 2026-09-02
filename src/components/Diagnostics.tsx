@@ -37,6 +37,8 @@ export function Diagnostics({ data, onRefresh, onUpdate }: {
     ["ES-DE", data.emudeck.esde_detected ? "Detected" : "Not detected"],
     ["Emulator", data.session?.emulator_name ?? "None"],
     ["PID", data.session?.pid.toString() ?? "—"],
+    ["Session ID", data.session?.session_id ?? "—"],
+    ["Process start ticks", data.session?.process_started_ticks?.toString() ?? "—"],
     ["Game", data.session?.game ?? "—"],
     ["ROM", data.session?.rom ?? "—"],
     ["Input backend", data.input_backend],

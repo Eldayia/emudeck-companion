@@ -46,3 +46,14 @@ export async function pressChord<T>(
   }
   if (failed) throw failure;
 }
+
+export async function inCurrentSession(
+  expected: string,
+  readSession: () => Promise<{ session_id: string } | null>,
+  press: () => Promise<void>,
+): Promise<void> {
+  if (!expected || (await readSession())?.session_id !== expected) {
+    throw new Error("Session changed before keyboard dispatch; refresh Companion");
+  }
+  await press();
+}
