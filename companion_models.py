@@ -26,6 +26,9 @@ class Session:
     started_at: float
     slot: int = 0
     toggles: dict[str, bool] = field(default_factory=dict)
+    metadata: dict[str, Any] = field(default_factory=dict)
+    discs: list[str] = field(default_factory=list)
+    current_disc: int | None = None
 
     def as_dict(self) -> dict[str, Any]:
         return asdict(self)

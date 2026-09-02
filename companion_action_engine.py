@@ -70,12 +70,19 @@ class ActionEngine:
             session.slot = max(int(definition.get("minimum", 0)), session.slot - 1)
             slot = session.slot
 
+        if action == "next_disc" and session.current_disc is not None:
+            session.current_disc = min(len(session.discs), session.current_disc + 1)
+        elif action == "previous_disc" and session.current_disc is not None:
+            session.current_disc = max(1, session.current_disc - 1)
+
         active = None
         if definition.get("mode") == "toggle":
             active = not session.toggles.get(action, False)
             session.toggles[action] = active
         label = definition.get("label", action.replace("_", " ").title())
         suffix = f" — Slot {session.slot}" if action in {"save_state", "load_state"} else ""
+        if action in {"previous_disc", "next_disc"} and session.current_disc is not None:
+            suffix = f" — Disc {session.current_disc}/{len(session.discs)}"
         return ActionResult(
             True,
             action,

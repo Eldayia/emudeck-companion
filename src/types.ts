@@ -17,6 +17,9 @@ export interface EmulatorSession {
   started_at: number;
   slot: number;
   toggles: Record<string, boolean>;
+  metadata: Record<string, string>;
+  discs: string[];
+  current_disc: number | null;
 }
 
 export interface ActionResult {

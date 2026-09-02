@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import asyncio
+import base64
 import json
+import mimetypes
 import sys
 from pathlib import Path
 from typing import Any
@@ -18,6 +20,7 @@ if _plugin_import_root not in sys.path:
 from companion_action_engine import ActionEngine
 from companion_diagnostics import build_diagnostics
 from companion_emudeck import detect_emudeck
+from companion_esde import ESDEMetadataIndex
 from companion_profiles import ProfileStore
 from companion_session import SessionManager
 
@@ -32,14 +35,23 @@ class Plugin:
             profile_dir = plugin_dir / "defaults" / "emulators"
         self.profile_store = ProfileStore(profile_dir)
         self.profile_store.load()
-        self.session_manager = SessionManager(self.profile_store)
+        self.emudeck = detect_emudeck(Path(decky.DECKY_USER_HOME))
+        self.metadata_index = self._build_metadata_index()
+        self.session_manager = SessionManager(self.profile_store, metadata_provider=self.metadata_index.lookup)
         self.action_engine = ActionEngine(frontend_input=True)
         self.last_action: dict[str, Any] | None = None
-        self.emudeck = detect_emudeck(Path(decky.DECKY_USER_HOME))
         self.settings_path = Path(decky.DECKY_PLUGIN_SETTINGS_DIR) / "settings.json"
         self.settings = self._load_settings()
         self._lock = asyncio.Lock()
         decky.logger.info("EmuDeck Companion loaded with %d profiles", len(self.profile_store.profiles))
+
+    def _build_metadata_index(self) -> ESDEMetadataIndex:
+        value = self.emudeck
+        return ESDEMetadataIndex(
+            Path(value["esde_root"]) if value.get("esde_root") else None,
+            Path(value["rom_root"]) if value.get("rom_root") else None,
+            Path(value["root"]) if value.get("root") else None,
+        )
 
     async def _unload(self) -> None:
         await self.action_engine.release_all()
@@ -70,6 +82,21 @@ class Plugin:
             session = self.session_manager.refresh()
             return session.as_dict() if session else None
 
+    async def get_artwork(self) -> str | None:
+        async with self._lock:
+            session = self.session_manager.refresh()
+            artwork = session.metadata.get("image") if session else None
+            if not artwork:
+                return None
+            path = Path(artwork)
+            try:
+                if not path.is_file() or path.stat().st_size > 8 * 1024 * 1024:
+                    return None
+                mime = mimetypes.guess_type(path.name)[0] or "application/octet-stream"
+                return f"data:{mime};base64,{base64.b64encode(path.read_bytes()).decode('ascii')}"
+            except OSError:
+                return None
+
     async def execute_action(self, action: str) -> dict[str, Any]:
         async with self._lock:
             session = self.session_manager.refresh()
@@ -82,6 +109,9 @@ class Plugin:
     async def refresh_detection(self) -> dict[str, Any] | None:
         async with self._lock:
             self.emudeck = detect_emudeck(Path(decky.DECKY_USER_HOME))
+            self.metadata_index = self._build_metadata_index()
+            self.session_manager.metadata_provider = self.metadata_index.lookup
+            self.session_manager.current = None
             session = self.session_manager.refresh()
             return session.as_dict() if session else None
 

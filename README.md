@@ -4,9 +4,9 @@ EmuDeck Companion is a Decky Loader plugin that exposes context-aware controls
 for the emulator currently launched by EmuDeck, ES-DE, or Steam ROM Manager.
 It does not replace EmuDeck and does not require EmuDecky.
 
-## MVP status
+## Current status
 
-Version 0.1 includes:
+Version 0.2 includes:
 
 - automatic process and ROM detection through `/proc`;
 - data-driven profiles for Cemu, DuckStation, PCSX2, Dolphin, and RetroArch;
@@ -14,6 +14,9 @@ Version 0.1 includes:
 - save/load, slots, pause, fast-forward, display, disc, menu, screenshot, and
   graceful quit actions where the profile supports them;
 - EmuDeck/ES-DE discovery and diagnostics;
+- internal, `/run/media`, and home-mounted EmuDeck storage discovery;
+- cached ES-DE `gamelist.xml` metadata and scraped cover lookup;
+- `.m3u` multidisc discovery with disc actions hidden for single-disc games;
 - 250 ms protection against accidental double actions;
 - controller-friendly Decky controls with no pointer-only interaction.
 
@@ -48,6 +51,8 @@ EmuDeck configuration are modified.
 - `companion_session.py`: active session lifecycle.
 - `companion_process_detection.py`: emulator process matching.
 - `companion_game_detection.py`: ROM extraction and display name fallback.
+- `companion_esde.py`: cached gamelist metadata and scraped-media lookup.
+- `companion_multidisc.py`: M3U playlist discovery.
 - `companion_action_engine.py`: capability checks, debounce, and action dispatch.
 - `companion_input_backends.py`: virtual input abstraction.
 - `defaults/emulators/`: independently versioned emulator profiles, copied to

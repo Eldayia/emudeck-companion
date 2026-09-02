@@ -2,7 +2,7 @@ import { ButtonItem, Navigation, PanelSection, PanelSectionRow, staticClasses } 
 import { definePlugin, toaster } from "@decky/api";
 import { useCallback, useEffect, useState } from "react";
 import { FaGamepad } from "react-icons/fa";
-import { executeAction, getCurrentSession, getDiagnostics, refreshDetection } from "./api/backend";
+import { executeAction, getArtwork, getCurrentSession, getDiagnostics, refreshDetection } from "./api/backend";
 import { Diagnostics } from "./components/Diagnostics";
 import { EmulatorActions } from "./components/EmulatorActions";
 import { GameHeader } from "./components/GameHeader";
@@ -15,6 +15,7 @@ function Content() {
   const [busyAction, setBusyAction] = useState<string | null>(null);
   const [showDiagnostics, setShowDiagnostics] = useState(false);
   const [diagnostics, setDiagnostics] = useState<DiagnosticsData | null>(null);
+  const [artwork, setArtwork] = useState<string | null>(null);
 
   const updateSession = useCallback(async () => {
     try {
@@ -46,6 +47,17 @@ function Content() {
       window.clearInterval(timer);
     };
   }, [updateSession]);
+
+  useEffect(() => {
+    let disposed = false;
+    setArtwork(null);
+    if (session?.metadata.image) {
+      void getArtwork().then((value) => {
+        if (!disposed) setArtwork(value);
+      }).catch((error) => console.error("Artwork loading failed", error));
+    }
+    return () => { disposed = true; };
+  }, [session?.rom, session?.metadata.image]);
 
   useEffect(() => {
     if (showDiagnostics) void updateDiagnostics();
@@ -94,7 +106,7 @@ function Content() {
       {session ? (
         <>
           <PanelSection>
-            <PanelSectionRow><GameHeader session={session} /></PanelSectionRow>
+            <PanelSectionRow><GameHeader session={session} artwork={artwork} /></PanelSectionRow>
           </PanelSection>
           <EmulatorActions session={session} busyAction={busyAction} onAction={onAction} />
         </>
