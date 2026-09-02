@@ -10,9 +10,11 @@ export interface EmulatorSession {
   pid: number;
   argv: string[];
   rom: string | null;
+  game_key: string | null;
   game: string | null;
   platform: string | null;
   capabilities: string[];
+  available_capabilities: string[];
   actions: Record<string, ActionDefinition>;
   started_at: number;
   slot: number;
@@ -60,6 +62,7 @@ export interface CompanionSettings {
   show_session_time: boolean;
   notifications: boolean;
   favorites: Record<string, string[]>;
+  game_overrides: Record<string, { hidden_actions: string[] }>;
 }
 
 export interface DiagnosticsData {

@@ -253,8 +253,10 @@ function Hotkeys({ session }) {
 function Settings({ settings, session, onChange }) {
     const favorites = session ? (settings.favorites[session.emulator] ?? []) : [];
     const availableActions = session
-        ? session.capabilities.filter((action) => Boolean(session.actions[action]))
+        ? session.available_capabilities.filter((action) => Boolean(session.actions[action]))
         : [];
+    const gameOverride = session?.game_key ? settings.game_overrides[session.game_key] : undefined;
+    const hiddenActions = gameOverride?.hidden_actions ?? [];
     const toggleFavorite = (action, checked) => {
         const selected = checked
             ? [...favorites, action].filter((item, index, values) => values.indexOf(item) === index).slice(0, 4)
@@ -266,10 +268,25 @@ function Settings({ settings, session, onChange }) {
             },
         });
     };
+    const toggleGameAction = (action, visible) => {
+        if (!session?.game_key)
+            return Promise.resolve();
+        const hidden = visible
+            ? hiddenActions.filter((item) => item !== action)
+            : [...hiddenActions, action].filter((item, index, values) => values.indexOf(item) === index);
+        const overrides = { ...settings.game_overrides };
+        if (hidden.length > 0)
+            overrides[session.game_key] = { hidden_actions: hidden };
+        else
+            delete overrides[session.game_key];
+        return onChange({ game_overrides: overrides });
+    };
     return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.PanelSection, { title: "Settings", children: [SP_JSX.jsx(DFL.ToggleField, { label: "Action notifications", description: "Show a notification after successful actions", checked: settings.notifications, onChange: (checked) => void onChange({ notifications: checked }) }), SP_JSX.jsx(DFL.ToggleField, { label: "Show platform", checked: settings.show_platform, onChange: (checked) => void onChange({ show_platform: checked }) }), SP_JSX.jsx(DFL.ToggleField, { label: "Show emulator", checked: settings.show_emulator, onChange: (checked) => void onChange({ show_emulator: checked }) }), SP_JSX.jsx(DFL.ToggleField, { label: "Show session time", checked: settings.show_session_time, onChange: (checked) => void onChange({ show_session_time: checked }) }), SP_JSX.jsx(DFL.SliderField, { label: "Detection interval", description: "How often Companion checks the active emulator", value: settings.detection_interval_ms, min: 1000, max: 5000, step: 250, showValue: true, valueSuffix: " ms", onChange: (value) => void onChange({ detection_interval_ms: value }) })] }), session && availableActions.length > 0 && (SP_JSX.jsx(DFL.PanelSection, { title: `Favorites — ${session.emulator_name}`, children: availableActions.map((action) => {
                     const checked = favorites.includes(action);
                     return (SP_JSX.jsx(DFL.ToggleField, { label: session.actions[action].label, description: checked ? "Shown in Favorites" : "", checked: checked, disabled: !checked && favorites.length >= 4, onChange: (value) => void toggleFavorite(action, value) }, action));
-                }) }))] }));
+                }) })), session?.game_key && availableActions.length > 0 && (SP_JSX.jsxs(DFL.PanelSection, { title: `Game Overrides — ${session.game ?? "Current Game"}`, children: [availableActions.map((action) => (SP_JSX.jsx(DFL.ToggleField, { label: session.actions[action].label, description: "Show this action for this game", checked: !hiddenActions.includes(action), onChange: (visible) => void toggleGameAction(action, visible) }, action))), hiddenActions.length > 0 && (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => void onChange({
+                                game_overrides: Object.fromEntries(Object.entries(settings.game_overrides).filter(([key]) => key !== session.game_key)),
+                            }), children: "Reset Game Overrides" }) }))] }))] }));
 }
 
 var EHIDKeyboardKey;

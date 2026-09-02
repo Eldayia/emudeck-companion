@@ -7,6 +7,8 @@ import unittest
 from pathlib import Path
 from unittest.mock import Mock
 
+from companion_models import Session
+
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -39,6 +41,12 @@ class PluginIntegrationTests(unittest.IsolatedAsyncioTestCase):
                         "cemu": ["pause", "invalid", "pause", "swap_screen", "fullscreen", "quit"],
                         "unknown": ["quit"],
                     },
+                    "game_overrides": {
+                        "duckstation:/roms/Silent Hill.chd": {
+                            "hidden_actions": ["fast_forward", "invalid", "fast_forward"],
+                        },
+                        "unknown:/roms/game.iso": {"hidden_actions": ["quit"]},
+                    },
                 })
                 self.assertFalse(settings["notifications"])
                 self.assertEqual(settings["detection_interval_ms"], 1000)
@@ -46,6 +54,26 @@ class PluginIntegrationTests(unittest.IsolatedAsyncioTestCase):
                     settings["favorites"],
                     {"cemu": ["pause", "swap_screen", "fullscreen", "quit"]},
                 )
+                self.assertEqual(settings["settings_version"], 2)
+                self.assertEqual(
+                    settings["game_overrides"],
+                    {"duckstation:/roms/Silent Hill.chd": {"hidden_actions": ["fast_forward"]}},
+                )
+                plugin.session_manager.refresh = Mock(return_value=Session(
+                    emulator="duckstation",
+                    emulator_name="DuckStation",
+                    pid=42,
+                    argv=["duckstation", "/roms/Silent Hill.chd"],
+                    rom="/roms/Silent Hill.chd",
+                    game="Silent Hill",
+                    platform="PlayStation",
+                    capabilities=["fast_forward", "quit"],
+                    actions={"fast_forward": {"label": "Fast Forward", "method": "hotkey", "keys": ["tab"]}},
+                    started_at=1.0,
+                ))
+                hidden_result = await plugin.execute_action("fast_forward")
+                self.assertFalse(hidden_result["ok"])
+                self.assertEqual(hidden_result["message"], "Action hidden by this game's settings")
                 persisted = json.loads(Path(directory, "settings.json").read_text(encoding="utf-8"))
                 self.assertEqual(persisted, settings)
                 exported = await plugin.export_diagnostics()

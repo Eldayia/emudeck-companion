@@ -1,4 +1,4 @@
-import { PanelSection, SliderField, ToggleField } from "@decky/ui";
+import { ButtonItem, PanelSection, PanelSectionRow, SliderField, ToggleField } from "@decky/ui";
 import type { CompanionSettings, EmulatorSession } from "../types";
 
 interface Props {
@@ -10,8 +10,10 @@ interface Props {
 export function Settings({ settings, session, onChange }: Props) {
   const favorites = session ? (settings.favorites[session.emulator] ?? []) : [];
   const availableActions = session
-    ? session.capabilities.filter((action) => Boolean(session.actions[action]))
+    ? session.available_capabilities.filter((action) => Boolean(session.actions[action]))
     : [];
+  const gameOverride = session?.game_key ? settings.game_overrides[session.game_key] : undefined;
+  const hiddenActions = gameOverride?.hidden_actions ?? [];
 
   const toggleFavorite = (action: string, checked: boolean) => {
     const selected = checked
@@ -23,6 +25,17 @@ export function Settings({ settings, session, onChange }: Props) {
         ...(session ? { [session.emulator]: selected } : {}),
       },
     });
+  };
+
+  const toggleGameAction = (action: string, visible: boolean) => {
+    if (!session?.game_key) return Promise.resolve();
+    const hidden = visible
+      ? hiddenActions.filter((item) => item !== action)
+      : [...hiddenActions, action].filter((item, index, values) => values.indexOf(item) === index);
+    const overrides = { ...settings.game_overrides };
+    if (hidden.length > 0) overrides[session.game_key] = { hidden_actions: hidden };
+    else delete overrides[session.game_key];
+    return onChange({ game_overrides: overrides });
   };
 
   return (
@@ -76,6 +89,33 @@ export function Settings({ settings, session, onChange }: Props) {
               />
             );
           })}
+        </PanelSection>
+      )}
+      {session?.game_key && availableActions.length > 0 && (
+        <PanelSection title={`Game Overrides — ${session.game ?? "Current Game"}`}>
+          {availableActions.map((action) => (
+            <ToggleField
+              key={action}
+              label={session.actions[action].label}
+              description="Show this action for this game"
+              checked={!hiddenActions.includes(action)}
+              onChange={(visible) => void toggleGameAction(action, visible)}
+            />
+          ))}
+          {hiddenActions.length > 0 && (
+            <PanelSectionRow>
+              <ButtonItem
+                layout="below"
+                onClick={() => void onChange({
+                  game_overrides: Object.fromEntries(
+                    Object.entries(settings.game_overrides).filter(([key]) => key !== session.game_key),
+                  ),
+                })}
+              >
+                Reset Game Overrides
+              </ButtonItem>
+            </PanelSectionRow>
+          )}
         </PanelSection>
       )}
     </>

@@ -23,6 +23,8 @@ from companion_document_server import DocumentServer
 from companion_documents import DocumentIndex
 from companion_emudeck import detect_emudeck
 from companion_esde import ESDEMetadataIndex
+from companion_game_overrides import hidden_actions, session_payload
+from companion_models import ActionResult
 from companion_profiles import ProfileStore
 from companion_savestates import SavestateIndex
 from companion_session import SessionManager
@@ -89,13 +91,14 @@ class Plugin:
 
     def _load_settings(self) -> dict[str, Any]:
         defaults = {
-            "settings_version": 1,
+            "settings_version": 2,
             "detection_interval_ms": 1500,
             "show_platform": True,
             "show_emulator": True,
             "show_session_time": True,
             "notifications": True,
             "favorites": {},
+            "game_overrides": {},
         }
         try:
             stored = json.loads(self.settings_path.read_text(encoding="utf-8"))
@@ -123,14 +126,35 @@ class Plugin:
                         selected.append(action)
                 if selected:
                     favorites[profile["id"]] = selected[:4]
+        game_overrides: dict[str, dict[str, list[str]]] = {}
+        raw_overrides = value.get("game_overrides", {})
+        if isinstance(raw_overrides, dict):
+            for key, override in list(raw_overrides.items())[:256]:
+                if not isinstance(key, str) or ":" not in key or not isinstance(override, dict):
+                    continue
+                profile = self.profile_store.get(key.split(":", 1)[0])
+                raw_hidden = override.get("hidden_actions", [])
+                if profile is None or not isinstance(raw_hidden, list):
+                    continue
+                hidden: list[str] = []
+                for action in raw_hidden:
+                    if (
+                        isinstance(action, str)
+                        and action in profile["actions"]
+                        and action not in hidden
+                    ):
+                        hidden.append(action)
+                if hidden:
+                    game_overrides[key] = {"hidden_actions": hidden}
         return {
-            "settings_version": 1,
+            "settings_version": 2,
             "detection_interval_ms": min(5000, max(1000, interval)),
             "show_platform": value.get("show_platform") is not False,
             "show_emulator": value.get("show_emulator") is not False,
             "show_session_time": value.get("show_session_time") is not False,
             "notifications": value.get("notifications") is not False,
             "favorites": favorites,
+            "game_overrides": game_overrides,
         }
 
     def _save_settings(self) -> None:
@@ -156,7 +180,7 @@ class Plugin:
     async def get_current_session(self) -> dict[str, Any] | None:
         async with self._lock:
             session = self.session_manager.refresh()
-            return session.as_dict() if session else None
+            return session_payload(session, self.settings) if session else None
 
     async def get_artwork(self) -> str | None:
         async with self._lock:
@@ -189,7 +213,10 @@ class Plugin:
     async def execute_action(self, action: str) -> dict[str, Any]:
         async with self._lock:
             session = self.session_manager.refresh()
-            result = await self.action_engine.execute(session, action)
+            if session is not None and action in hidden_actions(session, self.settings):
+                result = ActionResult(False, action, "Action hidden by this game's settings")
+            else:
+                result = await self.action_engine.execute(session, action)
             self.last_action = result.as_dict()
             log = decky.logger.info if result.ok else decky.logger.warning
             log("Action %s: %s", action, result.message)
@@ -206,7 +233,7 @@ class Plugin:
             self.session_manager.document_provider = self.document_index.lookup
             self.session_manager.current = None
             session = self.session_manager.refresh()
-            return session.as_dict() if session else None
+            return session_payload(session, self.settings) if session else None
 
     async def reload_profiles(self) -> dict[str, Any]:
         async with self._lock:
@@ -222,7 +249,7 @@ class Plugin:
             else self.action_engine.backend.name if self.action_engine.backend else None
         )
         diagnostics = build_diagnostics(
-            session.as_dict() if session else None,
+            session_payload(session, self.settings) if session else None,
             self.emudeck,
             backend_name,
             self.last_action,
