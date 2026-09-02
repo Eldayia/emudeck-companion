@@ -1,6 +1,7 @@
 from __future__ import annotations
 
-import xml.etree.ElementTree as ET
+import html
+import re
 from pathlib import Path
 from typing import Any
 
@@ -16,6 +17,21 @@ MEDIA_KINDS = {
     "manual": ("manuals",),
 }
 MEDIA_EXTENSIONS = (".png", ".jpg", ".jpeg", ".webp", ".mp4", ".mkv", ".pdf")
+GAME_PATTERN = re.compile(r"<game(?:\s[^>]*)?>(.*?)</game\s*>", re.IGNORECASE | re.DOTALL)
+
+
+def _element_text(block: str, tag: str) -> str | None:
+    match = re.search(
+        rf"<{re.escape(tag)}(?:\s[^>]*)?>(.*?)</{re.escape(tag)}\s*>",
+        block,
+        re.IGNORECASE | re.DOTALL,
+    )
+    if not match:
+        return None
+    value = match.group(1).strip()
+    if value.startswith("<![CDATA[") and value.endswith("]]>"):
+        value = value[9:-3]
+    return html.unescape(value.strip())
 
 
 def _normal(path: Path) -> str:
@@ -56,9 +72,10 @@ class ESDEMetadataIndex:
             return cached[1]
         entries: dict[str, dict[str, Any]] = {}
         try:
-            root = ET.parse(xml_path).getroot()
-            for game in root.findall("game"):
-                raw_path = (game.findtext("path") or "").strip()
+            document = xml_path.read_text(encoding="utf-8-sig")
+            for match in GAME_PATTERN.finditer(document):
+                game = match.group(1)
+                raw_path = (_element_text(game, "path") or "").strip()
                 if not raw_path:
                     continue
                 game_path = Path(raw_path).expanduser()
@@ -67,10 +84,10 @@ class ESDEMetadataIndex:
                 data = {
                     field: value.strip()
                     for field in METADATA_FIELDS
-                    if (value := game.findtext(field)) and value.strip()
+                    if (value := _element_text(game, field)) and value.strip()
                 }
                 entries[_normal(game_path)] = data
-        except (OSError, ET.ParseError):
+        except (OSError, UnicodeError):
             entries = {}
         self._cache[xml_path] = (signature, entries)
         return entries

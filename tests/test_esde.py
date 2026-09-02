@@ -30,6 +30,26 @@ class ESDEMetadataTests(unittest.TestCase):
             self.assertEqual(result["desc"], "A classic.")
             self.assertEqual(result["image"], str(cover))
 
+    def test_decodes_entities_and_cdata_without_xml_runtime(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            rom_root = root / "roms"
+            rom = rom_root / "wiiu" / "Zelda & Link.wux"
+            rom.parent.mkdir(parents=True)
+            rom.touch()
+            esde = root / ".emulationstation"
+            gamelist = esde / "gamelists" / "wiiu" / "gamelist.xml"
+            gamelist.parent.mkdir(parents=True)
+            gamelist.write_text(
+                "<gameList><game><path>./Zelda &amp; Link.wux</path>"
+                "<name>Zelda &amp; Link</name><desc><![CDATA[Hero <again>]]></desc>"
+                "</game></gameList>",
+                encoding="utf-8",
+            )
+            result = ESDEMetadataIndex(esde, rom_root).lookup(str(rom))
+            self.assertEqual(result["name"], "Zelda & Link")
+            self.assertEqual(result["desc"], "Hero <again>")
+
     def test_reloads_gamelist_after_mtime_change(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
