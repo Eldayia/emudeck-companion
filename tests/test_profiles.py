@@ -14,7 +14,7 @@ class ProfileStoreTests(unittest.TestCase):
         store.load()
         self.assertEqual({profile["id"] for profile in store.profiles}, {
             "cemu", "duckstation", "pcsx2", "dolphin", "retroarch",
-            "ppsspp", "melonds", "azahar", "flycast"
+            "ppsspp", "melonds", "azahar", "flycast", "mame", "fbneo"
         })
 
     def test_phase_two_profiles_use_emudeck_hotkeys(self):
@@ -24,8 +24,11 @@ class ProfileStoreTests(unittest.TestCase):
         melonds = store.get("melonds")
         azahar = store.get("azahar")
         flycast = store.get("flycast")
+        mame = store.get("mame")
+        fbneo = store.get("fbneo")
         assert ppsspp is not None and melonds is not None
         assert azahar is not None and flycast is not None
+        assert mame is not None and fbneo is not None
         self.assertEqual(ppsspp["actions"]["save_state"]["keys"], ["f2"])
         self.assertEqual(ppsspp["actions"]["load_state"]["keys"], ["f3"])
         self.assertEqual(melonds["actions"]["save_state"]["keys"], ["leftshift", "f{slot}"])
@@ -33,6 +36,9 @@ class ProfileStoreTests(unittest.TestCase):
         self.assertEqual(azahar["actions"]["save_state"]["keys"], ["leftshift", "f1"])
         self.assertEqual(azahar["actions"]["swap_screen"]["keys"], ["leftctrl", "tab"])
         self.assertEqual(flycast["actions"]["emulator_menu"]["keys"], ["tab"])
+        self.assertEqual(mame["actions"]["emulator_menu"]["keys"], ["tab"])
+        self.assertNotIn("save_state", mame["capabilities"])
+        self.assertEqual(fbneo["argv_contains"], ["fbneo_libretro"])
 
     def test_cemu_has_no_savestate_capability(self):
         store = ProfileStore(ROOT / "defaults" / "emulators")
@@ -54,6 +60,17 @@ class ProfileStoreTests(unittest.TestCase):
     def test_rejects_incomplete_profile(self):
         with tempfile.TemporaryDirectory() as directory:
             Path(directory, "broken.json").write_text('{"id": "broken"}', encoding="utf-8")
+            with self.assertRaises(ProfileError):
+                ProfileStore(Path(directory)).load()
+
+    def test_rejects_invalid_core_matcher(self):
+        with tempfile.TemporaryDirectory() as directory:
+            Path(directory, "broken.json").write_text(
+                '{"id":"broken","name":"Broken","profile_version":1,'
+                '"processes":["retroarch"],"argv_contains":"core",'
+                '"capabilities":[],"actions":{}}',
+                encoding="utf-8",
+            )
             with self.assertRaises(ProfileError):
                 ProfileStore(Path(directory)).load()
 

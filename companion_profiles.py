@@ -35,6 +35,10 @@ class ProfileStore:
             raise ProfileError(f"{path.name} is missing: {', '.join(sorted(missing))}")
         if not isinstance(profile["processes"], list) or not profile["processes"]:
             raise ProfileError(f"{path.name} must declare at least one process")
+        if "argv_contains" in profile and (
+            not isinstance(profile["argv_contains"], list) or not profile["argv_contains"]
+        ):
+            raise ProfileError(f"{path.name} argv_contains must be a non-empty list")
         unknown = set(profile["actions"]).difference(profile["capabilities"])
         if unknown:
             raise ProfileError(f"{path.name} actions lack capabilities: {', '.join(sorted(unknown))}")

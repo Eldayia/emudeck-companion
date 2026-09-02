@@ -6,11 +6,11 @@ It does not replace EmuDeck and does not require EmuDecky.
 
 ## Current status
 
-Version 0.4 includes:
+Version 0.5 includes:
 
 - automatic process and ROM detection through `/proc`;
 - data-driven profiles for Cemu, DuckStation, PCSX2, Dolphin, RetroArch,
-  PPSSPP, melonDS, Azahar, and Flycast;
+  PPSSPP, melonDS, Azahar, Flycast, MAME, and FinalBurn Neo;
 - contextual QAM sections (unsupported actions are hidden);
 - save/load, slots, pause, fast-forward, display, disc, menu, screenshot, and
   graceful quit actions where the profile supports them;
@@ -45,6 +45,13 @@ screen layout, rotation, fullscreen, screenshot, and quit shortcuts. Flycast
 exposes its Quick Menu everywhere; save/load and fast-forward are limited to
 Dreamcast ROMs because those keys have different arcade meanings on clean
 Naomi and Atomiswave configurations.
+
+MAME exposes only keyboard actions preserved by a clean EmuDeck configuration:
+its controller-navigable menu, screenshot, fullscreen, and graceful exit.
+Savestate, pause, and fast-forward buttons are intentionally hidden because
+EmuDeck maps those MAME functions exclusively to controller chords. FinalBurn
+Neo is detected from RetroArch's active core and keeps the proven RetroArch
+action set while displaying the correct emulator and arcade platform.
 
 ## Development
 

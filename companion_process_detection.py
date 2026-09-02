@@ -29,26 +29,37 @@ def iter_processes(proc_root: Path = Path("/proc")) -> Iterable[ProcessInfo]:
                 yield process
 
 
-def _matches(process: ProcessInfo, names: list[str]) -> bool:
+def _matches(process: ProcessInfo, names: list[str], argv_contains: list[str] | None = None) -> bool:
     candidates = {process.name.casefold()}
     if process.argv:
         candidates.add(os.path.basename(process.argv[0]).casefold())
     expected = {name.casefold() for name in names}
-    return bool(candidates.intersection(expected))
+    if not candidates.intersection(expected):
+        return False
+    required = [value.casefold() for value in (argv_contains or [])]
+    command = "\0".join(process.argv).casefold()
+    return not required or any(value in command for value in required)
 
 
 def find_emulator(
     profiles: Iterable[dict], processes: Iterable[ProcessInfo] | None = None
 ) -> tuple[dict, ProcessInfo] | None:
     process_list = list(processes if processes is not None else iter_processes())
-    matches: list[tuple[int, dict, ProcessInfo]] = []
+    matches: list[tuple[int, int, int, dict, ProcessInfo]] = []
     for profile in profiles:
         for process in process_list:
-            if _matches(process, profile["processes"]):
+            if _matches(process, profile["processes"], profile.get("argv_contains")):
                 # Prefer the most recently created matching process. This keeps ES-DE
-                # and stale helper processes from masking the active emulator.
-                matches.append((process.started_ticks or 0, profile, process))
+                # and stale helper processes from masking the active emulator. A
+                # core-specific profile wins over its generic frontend profile.
+                matches.append((
+                    process.started_ticks or 0,
+                    process.pid,
+                    1 if profile.get("argv_contains") else 0,
+                    profile,
+                    process,
+                ))
     if not matches:
         return None
-    _, profile, process = max(matches, key=lambda item: (item[0], item[2].pid))
+    _, _, _, profile, process = max(matches, key=lambda item: item[:3])
     return profile, process

@@ -1,0 +1,15 @@
+{
+  "id": "mame",
+  "name": "MAME",
+  "profile_version": 1,
+  "platform": "Arcade / MAME",
+  "processes": ["mame", "mame64", "mame.exe"],
+  "rom_extensions": ["7z", "chd", "zip"],
+  "capabilities": ["emulator_menu", "screenshot", "fullscreen", "quit"],
+  "actions": {
+    "emulator_menu": {"label": "MAME Menu", "method": "hotkey", "keys": ["tab"]},
+    "screenshot": {"label": "Screenshot", "method": "hotkey", "keys": ["f12"]},
+    "fullscreen": {"label": "Fullscreen", "method": "hotkey", "keys": ["leftalt", "enter"], "mode": "toggle"},
+    "quit": {"label": "Quit Emulator", "method": "hotkey", "keys": ["esc"]}
+  }
+}

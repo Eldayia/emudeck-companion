@@ -73,6 +73,40 @@ class ProcessDetectionTests(unittest.TestCase):
         assert match is not None
         self.assertEqual(match[1].pid, 60)
 
+    def test_core_specific_profile_beats_generic_retroarch(self):
+        profiles = [
+            {"id": "retroarch", "processes": ["retroarch"]},
+            {
+                "id": "fbneo",
+                "processes": ["retroarch"],
+                "argv_contains": ["fbneo_libretro"],
+            },
+        ]
+        processes = [ProcessInfo(
+            70,
+            "retroarch",
+            ("retroarch", "-L", "/cores/fbneo_libretro.so", "/roms/fbneo/mslug.zip"),
+            700,
+        )]
+        match = find_emulator(profiles, processes)
+        self.assertIsNotNone(match)
+        assert match is not None
+        self.assertEqual(match[0]["id"], "fbneo")
+
+    def test_core_specific_profile_requires_matching_core(self):
+        profiles = [{
+            "id": "fbneo",
+            "processes": ["retroarch"],
+            "argv_contains": ["fbneo_libretro"],
+        }]
+        processes = [ProcessInfo(
+            80,
+            "retroarch",
+            ("retroarch", "-L", "/cores/snes9x_libretro.so", "/roms/snes/game.sfc"),
+            800,
+        )]
+        self.assertIsNone(find_emulator(profiles, processes))
+
 
 if __name__ == "__main__":
     unittest.main()

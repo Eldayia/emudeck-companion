@@ -28,7 +28,7 @@ class PluginIntegrationTests(unittest.IsolatedAsyncioTestCase):
                 await plugin._main()
                 diagnostics = await plugin.get_diagnostics()
                 self.assertIsNone(diagnostics["session"])
-                self.assertEqual(len(plugin.profile_store.profiles), 9)
+                self.assertEqual(len(plugin.profile_store.profiles), 11)
                 await plugin._unload()
             finally:
                 sys.modules.pop("main", None)
@@ -59,7 +59,7 @@ class PluginIntegrationTests(unittest.IsolatedAsyncioTestCase):
                 self.assertEqual(Path(sys.path[0]), ROOT)
                 plugin = module.Plugin()
                 await plugin._main()
-                self.assertEqual(len(plugin.profile_store.profiles), 9)
+                self.assertEqual(len(plugin.profile_store.profiles), 11)
                 await plugin._unload()
             finally:
                 sys.path = original_path

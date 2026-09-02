@@ -1,0 +1,25 @@
+{
+  "id": "fbneo",
+  "name": "FinalBurn Neo",
+  "profile_version": 1,
+  "platform": "Arcade",
+  "processes": ["retroarch", "retroarch.exe"],
+  "argv_contains": ["fbneo_libretro"],
+  "rom_extensions": ["7z", "zip"],
+  "default_slot": 0,
+  "savestate_paths": ["saves/retroarch/states"],
+  "savestate_patterns": ["{stem}.state*"],
+  "capabilities": ["save_state", "load_state", "slot_previous", "slot_next", "fast_forward", "pause", "rewind", "screenshot", "fullscreen", "quit"],
+  "actions": {
+    "save_state": {"label": "Save State", "method": "hotkey", "keys": ["f2"]},
+    "load_state": {"label": "Load State", "method": "hotkey", "keys": ["f4"]},
+    "slot_previous": {"label": "Previous Slot", "method": "hotkey", "keys": ["f6"], "minimum": 0, "maximum": 99},
+    "slot_next": {"label": "Next Slot", "method": "hotkey", "keys": ["f7"], "minimum": 0, "maximum": 99},
+    "fast_forward": {"label": "Fast Forward", "method": "hotkey", "keys": ["space"], "mode": "toggle"},
+    "pause": {"label": "Pause / Resume", "method": "hotkey", "keys": ["p"], "mode": "toggle"},
+    "rewind": {"label": "Rewind", "method": "hotkey", "keys": ["r"], "mode": "toggle"},
+    "screenshot": {"label": "Screenshot", "method": "hotkey", "keys": ["f8"]},
+    "fullscreen": {"label": "Fullscreen", "method": "hotkey", "keys": ["f"], "mode": "toggle"},
+    "quit": {"label": "Quit Emulator", "method": "hotkey", "keys": ["esc"]}
+  }
+}
