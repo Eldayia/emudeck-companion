@@ -4,7 +4,7 @@
   "profile_version": 1,
   "platform": "RetroArch",
   "processes": ["retroarch", "retroarch.exe"],
-  "rom_extensions": ["a26", "a78", "bin", "chd", "cue", "gb", "gba", "gbc", "gen", "gg", "iso", "m3u", "md", "nes", "pbp", "sfc", "smc", "zip"],
+  "rom_extensions": ["a26", "a78", "bin", "chd", "cue", "gb", "gba", "gbc", "gen", "gg", "iso", "m3u", "md", "n64", "nes", "pbp", "sfc", "smc", "v64", "z64", "zip"],
   "default_slot": 0,
   "savestate_paths": ["saves/retroarch/states"],
   "savestate_patterns": ["{stem}.state*"],

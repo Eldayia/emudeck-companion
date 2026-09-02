@@ -17,6 +17,19 @@ class GameDetectionTests(unittest.TestCase):
     def test_makes_readable_game_name(self):
         self.assertEqual(game_name_from_rom("/roms/Final_Fantasy_VII (Disc 2).chd"), "Final Fantasy VII")
 
+    def test_extracts_n64_rom_after_retroarch_core(self):
+        profile = {"rom_extensions": ["n64", "v64", "z64"]}
+        argv = [
+            "retroarch",
+            "-L",
+            "/home/deck/.var/app/org.libretro.RetroArch/config/retroarch/cores/mupen64plus_next_libretro.so",
+            "/home/deck/Elements/Emulation/roms/n64/Doom 64 (Europe).n64",
+        ]
+        self.assertEqual(
+            extract_rom(argv, profile),
+            "/home/deck/Elements/Emulation/roms/n64/Doom 64 (Europe).n64",
+        )
+
 
 if __name__ == "__main__":
     unittest.main()
