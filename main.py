@@ -24,6 +24,7 @@ from companion_document_server import DocumentServer
 from companion_documents import DocumentIndex
 from companion_emudeck import detect_emudeck
 from companion_esde import ESDEMetadataIndex
+from companion_esde_hooks import read_status as esde_hook_status
 from companion_game_overrides import hidden_actions, session_payload
 from companion_hotkey_config import DuckStationHotkeyConfig
 from companion_models import ActionResult, ProcessInfo
@@ -327,6 +328,10 @@ class Plugin:
         diagnostics["document_server"] = self.document_server.diagnostics()
         diagnostics["plugin_version"] = self.plugin_version
         diagnostics["action_history"] = history["action_history"]
+        esde_root = self.emudeck.get("esde_root")
+        diagnostics["esde_hooks"] = esde_hook_status(
+            Path(esde_root) if esde_root else None, session.rom if session else None,
+        )
         return diagnostics
 
     async def get_diagnostics(self) -> dict[str, Any]:

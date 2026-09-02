@@ -36,14 +36,10 @@ launch arguments is not detected by this mechanism. Runtime slot/toggle state
 is not synchronized with the emulator. Do not treat local indicators as proof
 that an action occurred.
 
-Version 0.20.0 does not install or require ES-DE custom scripts. Optional ES-DE
-launch/exit hooks are a planned integration, not an available feature yet. The
-project may use them even when users must explicitly enable custom scripts in
-ES-DE. When implemented, the setup documentation must explain that activation,
-the exact installed files and events, preservation/backup of existing scripts,
-and how to disable and uninstall the integration. It must remain opt-in and
-must not silently overwrite existing user scripts. Hooks will only help with
-launches managed by ES-DE; they will not observe every in-emulator game change.
+Version 0.20.0 did not install or require ES-DE custom scripts. Since 0.21.0,
+optional launch/exit hooks provide diagnostic context, without changing the
+process-based session or authorizing input. See [setup and removal](esde-hooks.md).
+These hooks only observe ES-DE events, not every in-emulator game change.
 
 ## Validation
 

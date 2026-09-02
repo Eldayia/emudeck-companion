@@ -6,7 +6,7 @@ It does not replace EmuDeck and does not require EmuDecky.
 
 ## Current status
 
-Version 0.20.0 includes:
+Version 0.21.0 includes:
 
 Enable **Show Settings → Compact actions** for up to four favorites or common
 actions, with **Show All Actions** to expand the full list. The setting is off
@@ -19,7 +19,11 @@ Diagnostics includes the plugin version and a bounded action-delivery history,
 including frontend keyboard failures. See [action diagnostics](docs/action-diagnostics.md).
 
 Session changes reset game-specific state and reject stale action requests. See
-[session lifecycle and ES-DE integration plans](docs/session-lifecycle.md).
+[session lifecycle](docs/session-lifecycle.md).
+
+Optional ES-DE launch/exit event diagnostics are available through explicitly
+installed scripts. **Enable custom event scripts** must be activated in ES-DE.
+See the [installation and removal guide](docs/esde-hooks.md).
 
 - automatic process and ROM detection through `/proc`;
 - data-driven profiles for Cemu, DuckStation, PCSX2, Dolphin, RetroArch,

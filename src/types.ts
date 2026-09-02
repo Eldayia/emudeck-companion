@@ -92,6 +92,14 @@ export interface GameOverride {
 }
 
 export interface DiagnosticsData {
+  esde_hooks?: {
+    status: string;
+    root: string | null;
+    installed_hooks: number;
+    activation: string;
+    same_rom?: boolean;
+    last_event?: { id: string; event: string; timestamp: number; rom: string; game: string; system: string; system_name: string };
+  };
   plugin_version?: string;
   action_history?: Array<{
     id: string;

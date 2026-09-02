@@ -32,6 +32,21 @@ class PluginIntegrationTests(unittest.IsolatedAsyncioTestCase):
                 self.assertFalse((await plugin.get_settings())["compact_actions"])
                 diagnostics = await plugin.get_diagnostics()
                 self.assertIsNone(diagnostics["session"])
+                self.assertEqual(diagnostics["esde_hooks"]["status"], "not_installed")
+                from companion_esde_hooks import manage, record_event
+                esde_root = Path(directory) / "ES-DE"
+                esde_root.mkdir()
+                (esde_root / "es_settings.xml").write_text("<config/>")
+                manage(esde_root, "install")
+                await plugin.refresh_detection()
+                with patch("companion_esde_hooks.boot_id", return_value="integration-boot"):
+                    record_event(esde_root, "game-start", [str(esde_root / "game.n64"), "Test game", "n64", "Nintendo 64"])
+                    received = await plugin.get_diagnostics()
+                    self.assertIsNone(received["session"])
+                    self.assertEqual(received["esde_hooks"]["last_event"]["game"], "Test game")
+                    hook_export = await plugin.export_diagnostics()
+                    exported_hooks = json.loads(Path(hook_export["path"]).read_text())["esde_hooks"]
+                    self.assertEqual(exported_hooks, received["esde_hooks"])
                 self.assertTrue(diagnostics["document_server"]["running"])
                 self.assertIsInstance(diagnostics["document_server"]["port"], int)
                 self.assertEqual(len(plugin.profile_store.profiles), 14)

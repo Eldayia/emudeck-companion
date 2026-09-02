@@ -51,6 +51,18 @@ export function Diagnostics({ data, onRefresh, onUpdate }: {
     ["Last action", data.last_action?.message ?? "None"],
   ];
   const config = data.session?.hotkey_config;
+  const hooks = data.esde_hooks;
+  if (hooks) {
+    rows.push(["ES-DE hooks", `${hooks.status} (${hooks.installed_hooks}/2 files)`]);
+    rows.push(["ES-DE data folder", hooks.root ?? "Not detected"]);
+    if (hooks.installed_hooks > 0) rows.push(["ES-DE script activation", hooks.activation]);
+    if (hooks.last_event) {
+      rows.push(["Last ES-DE event", `${hooks.last_event.event} — ${new Date(hooks.last_event.timestamp * 1000).toLocaleString()}`]);
+      rows.push(["ES-DE event game", hooks.last_event.game]);
+      rows.push(["ES-DE event ROM", hooks.last_event.rom]);
+      rows.push(["ES-DE / process ROM", hooks.same_rom ? "Same path (not session confirmation)" : "Different path or no detected ROM"]);
+    }
+  }
   if (config?.status) {
     if (config.native_commands) {
       const native = config.native_commands;
