@@ -62,7 +62,12 @@ export interface CompanionSettings {
   show_session_time: boolean;
   notifications: boolean;
   favorites: Record<string, string[]>;
-  game_overrides: Record<string, { hidden_actions: string[] }>;
+  game_overrides: Record<string, GameOverride>;
+}
+
+export interface GameOverride {
+  hidden_actions?: string[];
+  favorites?: string[];
 }
 
 export interface DiagnosticsData {

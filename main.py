@@ -133,19 +133,35 @@ class Plugin:
                 if not isinstance(key, str) or ":" not in key or not isinstance(override, dict):
                     continue
                 profile = self.profile_store.get(key.split(":", 1)[0])
-                raw_hidden = override.get("hidden_actions", [])
-                if profile is None or not isinstance(raw_hidden, list):
+                if profile is None:
                     continue
+                normalized: dict[str, list[str]] = {}
+                raw_hidden = override.get("hidden_actions", [])
                 hidden: list[str] = []
-                for action in raw_hidden:
-                    if (
-                        isinstance(action, str)
-                        and action in profile["actions"]
-                        and action not in hidden
-                    ):
-                        hidden.append(action)
+                if isinstance(raw_hidden, list):
+                    for action in raw_hidden:
+                        if (
+                            isinstance(action, str)
+                            and action in profile["actions"]
+                            and action not in hidden
+                        ):
+                            hidden.append(action)
                 if hidden:
-                    game_overrides[key] = {"hidden_actions": hidden}
+                    normalized["hidden_actions"] = hidden
+                raw_game_favorites = override.get("favorites")
+                if isinstance(raw_game_favorites, list):
+                    selected: list[str] = []
+                    for action in raw_game_favorites:
+                        if (
+                            isinstance(action, str)
+                            and action in profile["actions"]
+                            and action not in hidden
+                            and action not in selected
+                        ):
+                            selected.append(action)
+                    normalized["favorites"] = selected[:4]
+                if normalized:
+                    game_overrides[key] = normalized
         return {
             "settings_version": 2,
             "detection_interval_ms": min(5000, max(1000, interval)),

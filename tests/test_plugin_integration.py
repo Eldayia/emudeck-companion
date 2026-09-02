@@ -44,7 +44,9 @@ class PluginIntegrationTests(unittest.IsolatedAsyncioTestCase):
                     "game_overrides": {
                         "duckstation:/roms/Silent Hill.chd": {
                             "hidden_actions": ["fast_forward", "invalid", "fast_forward"],
+                            "favorites": ["save_state", "invalid", "save_state", "fast_forward", "quit", "load_state", "pause"],
                         },
+                        "duckstation:/roms/No Favorites.chd": {"favorites": []},
                         "unknown:/roms/game.iso": {"hidden_actions": ["quit"]},
                     },
                 })
@@ -57,7 +59,13 @@ class PluginIntegrationTests(unittest.IsolatedAsyncioTestCase):
                 self.assertEqual(settings["settings_version"], 2)
                 self.assertEqual(
                     settings["game_overrides"],
-                    {"duckstation:/roms/Silent Hill.chd": {"hidden_actions": ["fast_forward"]}},
+                    {
+                        "duckstation:/roms/Silent Hill.chd": {
+                            "hidden_actions": ["fast_forward"],
+                            "favorites": ["save_state", "quit", "load_state", "pause"],
+                        },
+                        "duckstation:/roms/No Favorites.chd": {"favorites": []},
+                    },
                 )
                 plugin.session_manager.refresh = Mock(return_value=Session(
                     emulator="duckstation",

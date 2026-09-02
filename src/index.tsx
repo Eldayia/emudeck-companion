@@ -128,6 +128,12 @@ function Content() {
     if (showDiagnostics) await updateDiagnostics();
   }, [showDiagnostics, updateDiagnostics]);
 
+  const activeFavorites = session && settings
+    ? settings.game_overrides[session.game_key ?? ""]?.favorites
+      ?? settings.favorites[session.emulator]
+      ?? []
+    : [];
+
   if (!loaded) {
     return <PanelSection><PanelSectionRow>Detecting active emulator…</PanelSectionRow></PanelSection>;
   }
@@ -143,7 +149,7 @@ function Content() {
           </PanelSection>
           <EmulatorActions
             session={session}
-            favorites={settings?.favorites[session.emulator] ?? []}
+            favorites={activeFavorites}
             busyAction={busyAction}
             onAction={onAction}
           />

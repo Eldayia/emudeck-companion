@@ -1,5 +1,5 @@
 import { ButtonItem, PanelSection, PanelSectionRow, SliderField, ToggleField } from "@decky/ui";
-import type { CompanionSettings, EmulatorSession } from "../types";
+import type { CompanionSettings, EmulatorSession, GameOverride } from "../types";
 
 interface Props {
   settings: CompanionSettings;
@@ -8,17 +8,19 @@ interface Props {
 }
 
 export function Settings({ settings, session, onChange }: Props) {
-  const favorites = session ? (settings.favorites[session.emulator] ?? []) : [];
+  const emulatorFavorites = session ? (settings.favorites[session.emulator] ?? []) : [];
   const availableActions = session
     ? session.available_capabilities.filter((action) => Boolean(session.actions[action]))
     : [];
   const gameOverride = session?.game_key ? settings.game_overrides[session.game_key] : undefined;
   const hiddenActions = gameOverride?.hidden_actions ?? [];
+  const gameFavorites = gameOverride?.favorites;
+  const visibleActions = availableActions.filter((action) => !hiddenActions.includes(action));
 
   const toggleFavorite = (action: string, checked: boolean) => {
     const selected = checked
-      ? [...favorites, action].filter((item, index, values) => values.indexOf(item) === index).slice(0, 4)
-      : favorites.filter((item) => item !== action);
+      ? [...emulatorFavorites, action].filter((item, index, values) => values.indexOf(item) === index).slice(0, 4)
+      : emulatorFavorites.filter((item) => item !== action);
     return onChange({
       favorites: {
         ...settings.favorites,
@@ -27,15 +29,44 @@ export function Settings({ settings, session, onChange }: Props) {
     });
   };
 
+  const saveGameOverride = (override: GameOverride) => {
+    if (!session?.game_key) return Promise.resolve();
+    const overrides = { ...settings.game_overrides };
+    if ((override.hidden_actions?.length ?? 0) === 0 && override.favorites === undefined) {
+      delete overrides[session.game_key];
+    } else {
+      overrides[session.game_key] = override;
+    }
+    return onChange({ game_overrides: overrides });
+  };
+
   const toggleGameAction = (action: string, visible: boolean) => {
     if (!session?.game_key) return Promise.resolve();
     const hidden = visible
       ? hiddenActions.filter((item) => item !== action)
       : [...hiddenActions, action].filter((item, index, values) => values.indexOf(item) === index);
-    const overrides = { ...settings.game_overrides };
-    if (hidden.length > 0) overrides[session.game_key] = { hidden_actions: hidden };
-    else delete overrides[session.game_key];
-    return onChange({ game_overrides: overrides });
+    const next = { ...gameOverride };
+    if (hidden.length > 0) next.hidden_actions = hidden;
+    else delete next.hidden_actions;
+    return saveGameOverride(next);
+  };
+
+  const useGameFavorites = (enabled: boolean) => {
+    const next = { ...gameOverride };
+    if (enabled) {
+      next.favorites = emulatorFavorites.filter((action) => !hiddenActions.includes(action)).slice(0, 4);
+    } else {
+      delete next.favorites;
+    }
+    return saveGameOverride(next);
+  };
+
+  const toggleGameFavorite = (action: string, checked: boolean) => {
+    const current = gameFavorites ?? [];
+    const selected = checked
+      ? [...current, action].filter((item, index, values) => values.indexOf(item) === index).slice(0, 4)
+      : current.filter((item) => item !== action);
+    return saveGameOverride({ ...gameOverride, favorites: selected });
   };
 
   return (
@@ -77,14 +108,14 @@ export function Settings({ settings, session, onChange }: Props) {
       {session && availableActions.length > 0 && (
         <PanelSection title={`Favorites — ${session.emulator_name}`}>
           {availableActions.map((action) => {
-            const checked = favorites.includes(action);
+            const checked = emulatorFavorites.includes(action);
             return (
               <ToggleField
                 key={action}
                 label={session.actions[action].label}
                 description={checked ? "Shown in Favorites" : ""}
                 checked={checked}
-                disabled={!checked && favorites.length >= 4}
+                disabled={!checked && emulatorFavorites.length >= 4}
                 onChange={(value) => void toggleFavorite(action, value)}
               />
             );
@@ -93,6 +124,12 @@ export function Settings({ settings, session, onChange }: Props) {
       )}
       {session?.game_key && availableActions.length > 0 && (
         <PanelSection title={`Game Overrides — ${session.game ?? "Current Game"}`}>
+          <ToggleField
+            label="Use game-specific favorites"
+            description={gameFavorites === undefined ? `Inherited from ${session.emulator_name}` : "Overrides emulator favorites"}
+            checked={gameFavorites !== undefined}
+            onChange={(enabled) => void useGameFavorites(enabled)}
+          />
           {availableActions.map((action) => (
             <ToggleField
               key={action}
@@ -102,7 +139,7 @@ export function Settings({ settings, session, onChange }: Props) {
               onChange={(visible) => void toggleGameAction(action, visible)}
             />
           ))}
-          {hiddenActions.length > 0 && (
+          {gameOverride !== undefined && (
             <PanelSectionRow>
               <ButtonItem
                 layout="below"
@@ -116,6 +153,23 @@ export function Settings({ settings, session, onChange }: Props) {
               </ButtonItem>
             </PanelSectionRow>
           )}
+        </PanelSection>
+      )}
+      {session?.game_key && gameFavorites !== undefined && visibleActions.length > 0 && (
+        <PanelSection title={`Game Favorites — ${session.game ?? "Current Game"}`}>
+          {visibleActions.map((action) => {
+            const checked = gameFavorites.includes(action);
+            return (
+              <ToggleField
+                key={action}
+                label={session.actions[action].label}
+                description={checked ? "Shown in Favorites for this game" : ""}
+                checked={checked}
+                disabled={!checked && gameFavorites.length >= 4}
+                onChange={(value) => void toggleGameFavorite(action, value)}
+              />
+            );
+          })}
         </PanelSection>
       )}
     </>
