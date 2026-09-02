@@ -42,6 +42,14 @@ For Decky developer installation, build the frontend and copy the plugin folder
 to `~/homebrew/plugins/EmuDeck-Companion`. Decky loads `main.py`; the built
 frontend must be present as `dist/index.js`.
 
+The prebuilt `dist/index.js` is committed so a Steam Deck checkout can be
+updated without installing Node.js or pnpm:
+
+```sh
+git pull --ff-only origin main
+sudo systemctl restart plugin_loader
+```
+
 Settings use Decky's current `DECKY_PLUGIN_SETTINGS_DIR`. No system files or
 EmuDeck configuration are modified.
 
