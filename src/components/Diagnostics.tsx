@@ -43,6 +43,9 @@ export function Diagnostics({ data, onRefresh }: { data: DiagnosticsData; onRefr
   if (config?.status) {
     rows.push(["Hotkey configuration", `${config.status} — ${config.path ?? ""}`]);
     rows.push(["Hotkey scope", config.scope ?? "Global settings"]);
+    if (config.paths && config.paths.length > 1) {
+      rows.push(["Hotkey files", config.paths.join(" → ")]);
+    }
     for (const [action, reason] of Object.entries(config.disabled_actions ?? {})) {
       rows.push([data.session?.actions[action]?.label ?? action, reason]);
     }

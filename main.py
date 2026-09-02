@@ -25,8 +25,9 @@ from companion_emudeck import detect_emudeck
 from companion_esde import ESDEMetadataIndex
 from companion_game_overrides import hidden_actions, session_payload
 from companion_hotkey_config import DuckStationHotkeyConfig
-from companion_models import ActionResult
+from companion_models import ActionResult, ProcessInfo
 from companion_profiles import ProfileStore
+from companion_retroarch_config import RetroArchHotkeyConfig
 from companion_savestates import SavestateIndex
 from companion_session import SessionManager
 
@@ -51,12 +52,16 @@ class Plugin:
             "Document server started on localhost:%s",
             self.document_server.diagnostics()["port"],
         )
+        self.hotkey_readers = (
+            DuckStationHotkeyConfig(Path(decky.DECKY_USER_HOME)),
+            RetroArchHotkeyConfig(Path(decky.DECKY_USER_HOME)),
+        )
         self.session_manager = SessionManager(
             self.profile_store,
             metadata_provider=self.metadata_index.lookup,
             savestate_provider=self.savestate_index.lookup,
             document_provider=self.document_index.lookup,
-            profile_provider=DuckStationHotkeyConfig(Path(decky.DECKY_USER_HOME)),
+            profile_provider=self._resolve_hotkey_profile,
         )
         self.action_engine = ActionEngine(frontend_input=True)
         self.last_action: dict[str, Any] | None = None
@@ -64,6 +69,11 @@ class Plugin:
         self.settings = self._load_settings()
         self._lock = asyncio.Lock()
         decky.logger.info("EmuDeck Companion loaded with %d profiles", len(self.profile_store.profiles))
+
+    def _resolve_hotkey_profile(self, profile: dict[str, Any], process: ProcessInfo) -> dict[str, Any]:
+        for reader in self.hotkey_readers:
+            profile = reader(profile, process)
+        return profile
 
     def _build_metadata_index(self) -> ESDEMetadataIndex:
         value = self.emudeck

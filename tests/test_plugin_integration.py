@@ -7,7 +7,7 @@ import unittest
 from pathlib import Path
 from unittest.mock import Mock
 
-from companion_models import Session
+from companion_models import ProcessInfo, Session
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -34,6 +34,12 @@ class PluginIntegrationTests(unittest.IsolatedAsyncioTestCase):
                 self.assertTrue(diagnostics["document_server"]["running"])
                 self.assertIsInstance(diagnostics["document_server"]["port"], int)
                 self.assertEqual(len(plugin.profile_store.profiles), 14)
+                resolved = plugin._resolve_hotkey_profile(
+                    plugin.profile_store.get("retroarch"),
+                    ProcessInfo(999999, "retroarch", ("retroarch",)),
+                )
+                self.assertEqual(resolved["hotkey_config"]["status"], "fallback")
+                self.assertNotIn("rewind", resolved["capabilities"])
                 settings = await plugin.update_settings({
                     "notifications": False,
                     "detection_interval_ms": 100,

@@ -19,6 +19,7 @@ export interface EmulatorSession {
   hotkey_config?: {
     status?: string;
     path?: string;
+    paths?: string[];
     scope?: string;
     disabled_actions?: Record<string, string>;
   };

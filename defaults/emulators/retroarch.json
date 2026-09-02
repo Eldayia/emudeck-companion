@@ -1,7 +1,8 @@
 {
   "id": "retroarch",
   "name": "RetroArch",
-  "profile_version": 1,
+  "profile_version": 2,
+  "hotkey_config_format": "retroarch",
   "platform": "RetroArch",
   "processes": ["retroarch", "retroarch.exe"],
   "rom_extensions": ["a26", "a78", "bin", "chd", "cue", "gb", "gba", "gbc", "gen", "gg", "iso", "m3u", "md", "n64", "nes", "pbp", "sfc", "smc", "v64", "z64", "zip"],
@@ -16,7 +17,7 @@
     "slot_next": {"label": "Next Slot", "method": "hotkey", "keys": ["f7"], "minimum": 0, "maximum": 99},
     "fast_forward": {"label": "Fast Forward", "method": "hotkey", "keys": ["space"], "mode": "toggle"},
     "pause": {"label": "Pause / Resume", "method": "hotkey", "keys": ["p"], "mode": "toggle"},
-    "rewind": {"label": "Rewind", "method": "hotkey", "keys": ["r"], "mode": "toggle"},
+    "rewind": {"label": "Rewind", "method": "hotkey", "keys": ["r"], "mode": "hold"},
     "previous_disc": {"label": "Previous Disc", "method": "hotkey", "keys": ["leftshift", "d"]},
     "next_disc": {"label": "Next Disc", "method": "hotkey", "keys": ["d"]},
     "screenshot": {"label": "Screenshot", "method": "hotkey", "keys": ["f8"]},

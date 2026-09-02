@@ -20,6 +20,20 @@ KEY_ALIASES = {
 }
 
 
+def process_environment(proc_root: Path, pid: int) -> dict[str, str]:
+    """Keep only location hints, never credentials from the process environment."""
+    environment: dict[str, str] = {}
+    try:
+        with (proc_root / str(pid) / "environ").open("rb") as stream:
+            for entry in stream.read(128 * 1024).decode("utf-8", "replace").split("\0"):
+                key, separator, value = entry.partition("=")
+                if separator and key in {"HOME", "XDG_DATA_HOME", "XDG_CONFIG_HOME", "FLATPAK_ID"}:
+                    environment[key] = value
+    except OSError:
+        pass
+    return environment
+
+
 def keyboard_binding(value: str) -> list[str] | None:
     """Accept a complete keyboard chord, never the keyboard part of a mixed chord."""
     parts = value.split("&")
@@ -69,16 +83,7 @@ class DuckStationHotkeyConfig:
         self._bindings: dict[str, list[str]] = {}
 
     def _config_path(self, process: ProcessInfo) -> Path:
-        # Read only the variables needed to locate this process's configuration.
-        environment: dict[str, str] = {}
-        try:
-            with (self.proc_root / str(process.pid) / "environ").open("rb") as stream:
-                for entry in stream.read(128 * 1024).decode("utf-8", "replace").split("\0"):
-                    key, separator, value = entry.partition("=")
-                    if separator and key in {"HOME", "XDG_DATA_HOME", "XDG_CONFIG_HOME", "FLATPAK_ID"}:
-                        environment[key] = value
-        except OSError:
-            pass
+        environment = process_environment(self.proc_root, process.pid)
         home = Path(environment.get("HOME", str(self.user_home)))
         if not home.is_absolute():
             home = self.user_home
