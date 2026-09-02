@@ -67,6 +67,14 @@ class ActionEngineTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(result.ok)
         self.assertEqual(session.slot, 2)
 
+    async def test_prepares_hotkey_for_steam_frontend(self):
+        session = make_session()
+        engine = ActionEngine(debounce_ms=0, frontend_input=True)
+        result = await engine.execute(session, "save_state")
+        self.assertTrue(result.ok)
+        self.assertEqual(result.dispatch, "steam_input")
+        self.assertEqual(result.keys, ["f1"])
+
 
 if __name__ == "__main__":
     unittest.main()

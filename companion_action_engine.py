@@ -11,8 +11,14 @@ from companion_models import ActionResult, Session
 
 
 class ActionEngine:
-    def __init__(self, backend: InputBackend | None = None, debounce_ms: int = 250) -> None:
+    def __init__(
+        self,
+        backend: InputBackend | None = None,
+        debounce_ms: int = 250,
+        frontend_input: bool = False,
+    ) -> None:
         self.backend = backend if backend is not None else select_input_backend()
+        self.frontend_input = frontend_input
         self.debounce_seconds = debounce_ms / 1000
         self._last_actions: dict[str, float] = {}
 
@@ -28,20 +34,29 @@ class ActionEngine:
         self._last_actions[debounce_key] = now
         definition = session.actions[action]
         method = definition.get("method", "hotkey")
+        keys: list[str] | None = None
+        dispatch = "none"
         try:
             if method == "hotkey":
-                if self.backend is None:
-                    return ActionResult(False, action, "No compatible virtual input backend is available")
                 keys = [str(key).format(slot=session.slot) for key in definition.get("keys", [])]
                 if not keys:
                     return ActionResult(False, action, "The emulator profile has no hotkey for this action")
-                await self.backend.press(keys, session.pid)
+                if self.frontend_input:
+                    # Steam's own controller keyboard API is available in the Decky
+                    # frontend and works in Gamescope without extra system packages.
+                    dispatch = "steam_input"
+                elif self.backend is not None:
+                    await self.backend.press(keys, session.pid)
+                    dispatch = self.backend.name
+                else:
+                    return ActionResult(False, action, "No compatible virtual input backend is available")
             elif method == "select_slot":
                 # Some emulators address slots directly in their save/load shortcuts.
                 # Changing the Companion selection therefore requires no injected key.
                 pass
             elif method == "signal":
                 await self._send_signal(session.pid, definition.get("signal", "SIGTERM"))
+                dispatch = "signal"
             else:
                 return ActionResult(False, action, f"Unsupported action method: {method}")
         except (InputBackendError, OSError, asyncio.TimeoutError, ValueError) as error:
@@ -61,7 +76,15 @@ class ActionEngine:
             session.toggles[action] = active
         label = definition.get("label", action.replace("_", " ").title())
         suffix = f" — Slot {session.slot}" if action in {"save_state", "load_state"} else ""
-        return ActionResult(True, action, f"{label}{suffix}", slot=slot, active=active)
+        return ActionResult(
+            True,
+            action,
+            f"{label}{suffix}",
+            slot=slot,
+            active=active,
+            keys=keys,
+            dispatch=dispatch,
+        )
 
     @staticmethod
     async def _send_signal(pid: int, signal_name: str) -> None:

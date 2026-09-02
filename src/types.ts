@@ -25,6 +25,8 @@ export interface ActionResult {
   message: string;
   slot: number | null;
   active: boolean | null;
+  keys: string[] | null;
+  dispatch: "steam_input" | "signal" | "none" | string;
 }
 
 export interface EmuDeckStatus {

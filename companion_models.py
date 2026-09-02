@@ -38,6 +38,8 @@ class ActionResult:
     message: str
     slot: int | None = None
     active: bool | None = None
+    keys: list[str] | None = None
+    dispatch: str = "none"
 
     def as_dict(self) -> dict[str, Any]:
         return asdict(self)

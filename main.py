@@ -2,10 +2,18 @@ from __future__ import annotations
 
 import asyncio
 import json
+import sys
 from pathlib import Path
 from typing import Any
 
 import decky
+
+# Decky loads main.py through importlib without necessarily adding the plugin
+# directory to sys.path. Keep the backend split into distributable root modules
+# while making their imports deterministic in both developer and Store installs.
+_plugin_import_root = str(Path(decky.DECKY_PLUGIN_DIR).resolve())
+if _plugin_import_root not in sys.path:
+    sys.path.insert(0, _plugin_import_root)
 
 from companion_action_engine import ActionEngine
 from companion_diagnostics import build_diagnostics
@@ -25,7 +33,7 @@ class Plugin:
         self.profile_store = ProfileStore(profile_dir)
         self.profile_store.load()
         self.session_manager = SessionManager(self.profile_store)
-        self.action_engine = ActionEngine()
+        self.action_engine = ActionEngine(frontend_input=True)
         self.last_action: dict[str, Any] | None = None
         self.emudeck = detect_emudeck(Path(decky.DECKY_USER_HOME))
         self.settings_path = Path(decky.DECKY_PLUGIN_SETTINGS_DIR) / "settings.json"
@@ -86,7 +94,11 @@ class Plugin:
     async def get_diagnostics(self) -> dict[str, Any]:
         async with self._lock:
             session = self.session_manager.refresh()
-            backend_name = self.action_engine.backend.name if self.action_engine.backend else None
+            backend_name = (
+                "SteamClient.Input"
+                if self.action_engine.frontend_input
+                else self.action_engine.backend.name if self.action_engine.backend else None
+            )
             return build_diagnostics(
                 session.as_dict() if session else None,
                 self.emudeck,

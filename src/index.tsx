@@ -1,4 +1,4 @@
-import { ButtonItem, PanelSection, PanelSectionRow, staticClasses } from "@decky/ui";
+import { ButtonItem, Navigation, PanelSection, PanelSectionRow, staticClasses } from "@decky/ui";
 import { definePlugin, toaster } from "@decky/api";
 import { useCallback, useEffect, useState } from "react";
 import { FaGamepad } from "react-icons/fa";
@@ -6,6 +6,7 @@ import { executeAction, getCurrentSession, getDiagnostics, refreshDetection } fr
 import { Diagnostics } from "./components/Diagnostics";
 import { EmulatorActions } from "./components/EmulatorActions";
 import { GameHeader } from "./components/GameHeader";
+import { pressHotkeys } from "./hotkey";
 import type { DiagnosticsData, EmulatorSession } from "./types";
 
 function Content() {
@@ -55,11 +56,23 @@ function Content() {
     setBusyAction(action);
     try {
       const result = await executeAction(action);
-      toaster.toast({
-        title: result.ok ? "EmuDeck Companion" : "Action failed",
-        body: result.message,
-      });
-      await updateSession();
+      if (result.ok && result.dispatch === "steam_input" && result.keys) {
+        Navigation.CloseSideMenus();
+        window.setTimeout(() => {
+          try {
+            pressHotkeys(result.keys ?? []);
+            toaster.toast({ title: "EmuDeck Companion", body: result.message });
+          } catch (error) {
+            toaster.toast({ title: "Action failed", body: String(error) });
+          }
+        }, 200);
+      } else {
+        toaster.toast({
+          title: result.ok ? "EmuDeck Companion" : "Action failed",
+          body: result.message,
+        });
+        await updateSession();
+      }
     } catch (error) {
       toaster.toast({ title: "Action failed", body: String(error) });
     } finally {

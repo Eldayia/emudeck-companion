@@ -17,10 +17,10 @@ Version 0.1 includes:
 - 250 ms protection against accidental double actions;
 - controller-friendly Decky controls with no pointer-only interaction.
 
-This implementation is deliberately honest about action delivery. It tries
-`ydotool`, then Wayland `wtype`, then targeted X11 `xdotool`. If none is
-available, the UI reports an error instead of claiming that the emulator acted.
-The bundled hotkeys are baseline defaults and must be validated against the
+Hotkeys are delivered through Steam's controller-keyboard API after the QAM is
+closed, so no extra input package or root access is required. `ydotool`, Wayland
+`wtype`, and targeted X11 `xdotool` remain available as backend fallbacks. The
+bundled hotkeys are baseline defaults and must be validated against the
 actual EmuDeck/emulator configuration before a store release. Steam Deck Gaming
 Mode hardware tests are still required.
 
