@@ -15,6 +15,7 @@ import { Diagnostics } from "./components/Diagnostics";
 import { Documents } from "./components/Documents";
 import { EmulatorActions } from "./components/EmulatorActions";
 import { GameHeader } from "./components/GameHeader";
+import { GameDetails } from "./components/GameDetails";
 import { Hotkeys } from "./components/Hotkeys";
 import { Settings } from "./components/Settings";
 import { pressHotkeys } from "./hotkey";
@@ -156,6 +157,10 @@ function Content() {
             onAction={onAction}
           />
           <Documents documents={session.documents} />
+          <GameDetails
+            key={`${session.emulator}:${session.pid}:${session.started_at}:${session.rom ?? ""}`}
+            metadata={session.metadata}
+          />
           <Hotkeys session={session} />
         </>
       ) : (

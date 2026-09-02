@@ -27,6 +27,10 @@ reference, settings and diagnostics remain accessible in either view.
 
 ## Validation
 
+The user reported the compact mode working on their Steam Deck with version
+0.17.0 on 2026-09-02. This is a user smoke test, not exhaustive validation of
+every favorite, game override or controller combination.
+
 `pnpm test` runs backend tests and frontend selection tests; `pnpm test:frontend`
 runs only the latter. TypeScript checks and the frontend bundle build are also
 required. The selection tests run without Steam/Decky and do not prove gamepad

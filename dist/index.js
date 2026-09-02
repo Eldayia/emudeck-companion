@@ -257,6 +257,80 @@ function GameHeader({ session, artwork, settings, }) {
                     .filter(Boolean).join(" • ") }))] }));
 }
 
+function text(value) {
+    if (typeof value !== "string")
+        return "";
+    const result = value.trim();
+    return result.toLowerCase() === "unknown" ? "" : result;
+}
+function clip(value, length) {
+    const result = value.slice(0, length);
+    return /[\uD800-\uDBFF]$/.test(result) ? result.slice(0, -1) : result;
+}
+function releaseDate(value) {
+    const raw = text(value);
+    // ES-DE's default date is a sentinel, not an actual release date.
+    if (raw === "19700101T000000")
+        return null;
+    const match = /^(\d{4})(\d{2})(\d{2})(?:T(\d{2})(\d{2})(\d{2}))?$/.exec(raw)
+        ?? /^(\d{4})-(\d{2})-(\d{2})$/.exec(raw);
+    if (!match)
+        return null;
+    const [, year, month, day, hour = "0", minute = "0", second = "0"] = match;
+    if (Number(hour) > 23 || Number(minute) > 59 || Number(second) > 59 || Number(year) === 0)
+        return null;
+    const date = new Date(`${year}-${month}-${day}T00:00:00Z`);
+    if (date.getUTCFullYear() !== Number(year) || date.getUTCMonth() + 1 !== Number(month) || date.getUTCDate() !== Number(day))
+        return null;
+    return `${year}-${month}-${day}`;
+}
+function gameDetails(metadata) {
+    const rows = [];
+    for (const [key, label] of [["genre", "Genre"], ["developer", "Developer"], ["publisher", "Publisher"], ["players", "Players"]]) {
+        const value = text(metadata[key]);
+        if (value)
+            rows.push([label, value.length > 160 ? `${clip(value, 157)}…` : value]);
+    }
+    const date = releaseDate(metadata.releasedate);
+    if (date)
+        rows.push(["Release date", date]);
+    const rawRating = text(metadata.rating);
+    if (/^(?:\d+(?:\.\d+)?|\.\d+)$/.test(rawRating)) {
+        const rating = Number(rawRating);
+        // Zero is ES-DE's default/unrated value; don't display it as a bad review.
+        if (rating > 0 && rating <= 1)
+            rows.push(["ES-DE rating", `${Math.round(rating * 100)}%`]);
+    }
+    const description = text(metadata.desc);
+    const descriptionTruncated = description.length > 12000;
+    let remaining = clip(description, 12000);
+    // Avoid cutting a UTF-16 surrogate pair at the safety limit or page boundary.
+    const descriptionPages = [];
+    while (remaining.length) {
+        let end = Math.min(400, remaining.length);
+        if (end < remaining.length) {
+            const boundary = remaining.slice(0, end + 1).search(/\s\S*$/);
+            if (boundary >= 200)
+                end = boundary;
+            if (/[\uD800-\uDBFF]/.test(remaining[end - 1]))
+                end--;
+        }
+        descriptionPages.push(remaining.slice(0, end).trim());
+        remaining = remaining.slice(end).trimStart();
+    }
+    return { rows, descriptionPages, descriptionTruncated };
+}
+
+function GameDetails({ metadata }) {
+    const [expanded, setExpanded] = SP_REACT.useState(false);
+    const [page, setPage] = SP_REACT.useState(0);
+    const details = SP_REACT.useMemo(() => gameDetails(metadata), [metadata]);
+    const current = Math.min(page, Math.max(0, details.descriptionPages.length - 1));
+    if (!details.rows.length && !details.descriptionPages.length)
+        return null;
+    return (SP_JSX.jsxs(DFL.PanelSection, { title: "Game Details", children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => { setExpanded((value) => !value); setPage(0); }, children: expanded ? "Hide Game Details" : "Show Game Details" }) }), expanded && SP_JSX.jsxs(SP_JSX.Fragment, { children: [details.rows.map(([label, value]) => (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: { width: "100%", overflowWrap: "anywhere" }, children: [SP_JSX.jsx("div", { style: { opacity: 0.55, fontSize: "12px" }, children: label }), SP_JSX.jsx("div", { children: value })] }) }, label))), details.descriptionPages.length > 0 && SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: { fontSize: "12px", lineHeight: 1.4, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }, children: details.descriptionPages[current] }) }), details.descriptionPages.length > 1 && SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.PanelSectionRow, { children: ["Description \u2014 ", current + 1, " / ", details.descriptionPages.length] }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: current === 0, onClick: () => setPage(current - 1), children: "Previous Page" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: current >= details.descriptionPages.length - 1, onClick: () => setPage(current + 1), children: "Next Page" }) })] }), details.descriptionTruncated && SP_JSX.jsx(DFL.PanelSectionRow, { children: "Description limited to 12,000 characters." })] }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: { opacity: 0.55, fontSize: "12px" }, children: "Source: local ES-DE metadata" }) })] })] }));
+}
+
 const keyLabels = {
     leftalt: "Alt",
     leftctrl: "Ctrl",
@@ -827,7 +901,7 @@ function Content() {
     if (!loaded) {
         return SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.PanelSectionRow, { children: "Detecting active emulator\u2026" }) });
     }
-    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [session ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(GameHeader, { session: session, artwork: artwork, settings: settings }) }) }), SP_JSX.jsx(EmulatorActions, { session: session, favorites: activeFavorites, compact: settings?.compact_actions ?? false, busyAction: busyAction, onAction: onAction }, `${session.emulator}:${session.pid}:${session.started_at}:${session.rom ?? ""}`), SP_JSX.jsx(Documents, { documents: session.documents }), SP_JSX.jsx(Hotkeys, { session: session })] })) : (SP_JSX.jsxs(DFL.PanelSection, { title: "EmuDeck Companion", children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: { width: "100%", padding: "8px 0", opacity: 0.72 }, children: "No active emulation session" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => void manualRefresh(), children: "Refresh Detection" }) })] })), SP_JSX.jsxs(DFL.PanelSection, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setShowSettings((value) => !value), children: showSettings ? "Hide Settings" : "Show Settings" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setShowDiagnostics((value) => !value), children: showDiagnostics ? "Hide Diagnostics" : "Show Diagnostics" }) })] }), showSettings && settings && (SP_JSX.jsx(Settings, { settings: settings, session: session, onChange: saveSettings })), showDiagnostics && diagnostics && SP_JSX.jsx(Diagnostics, { data: diagnostics, onRefresh: manualRefresh })] }));
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [session ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(GameHeader, { session: session, artwork: artwork, settings: settings }) }) }), SP_JSX.jsx(EmulatorActions, { session: session, favorites: activeFavorites, compact: settings?.compact_actions ?? false, busyAction: busyAction, onAction: onAction }, `${session.emulator}:${session.pid}:${session.started_at}:${session.rom ?? ""}`), SP_JSX.jsx(Documents, { documents: session.documents }), SP_JSX.jsx(GameDetails, { metadata: session.metadata }, `${session.emulator}:${session.pid}:${session.started_at}:${session.rom ?? ""}`), SP_JSX.jsx(Hotkeys, { session: session })] })) : (SP_JSX.jsxs(DFL.PanelSection, { title: "EmuDeck Companion", children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: { width: "100%", padding: "8px 0", opacity: 0.72 }, children: "No active emulation session" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => void manualRefresh(), children: "Refresh Detection" }) })] })), SP_JSX.jsxs(DFL.PanelSection, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setShowSettings((value) => !value), children: showSettings ? "Hide Settings" : "Show Settings" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setShowDiagnostics((value) => !value), children: showDiagnostics ? "Hide Diagnostics" : "Show Diagnostics" }) })] }), showSettings && settings && (SP_JSX.jsx(Settings, { settings: settings, session: session, onChange: saveSettings })), showDiagnostics && diagnostics && SP_JSX.jsx(Diagnostics, { data: diagnostics, onRefresh: manualRefresh })] }));
 }
 var index = definePlugin(() => ({
     name: "EmuDeck Companion",

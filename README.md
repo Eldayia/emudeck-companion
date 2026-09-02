@@ -6,11 +6,14 @@ It does not replace EmuDeck and does not require EmuDecky.
 
 ## Current status
 
-Version 0.17.0 includes:
+Version 0.18.0 includes:
 
 Enable **Show Settings → Compact actions** for up to four favorites or common
 actions, with **Show All Actions** to expand the full list. The setting is off
 by default. See the [compact-mode guide](docs/compact-actions.md).
+
+**Show Game Details** displays local ES-DE metadata and a paginated description,
+when available. See the [game-details guide](docs/game-details.md).
 
 - automatic process and ROM detection through `/proc`;
 - data-driven profiles for Cemu, DuckStation, PCSX2, Dolphin, RetroArch,

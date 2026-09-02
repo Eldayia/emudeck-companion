@@ -19,6 +19,8 @@ class ESDEMetadataTests(unittest.TestCase):
             gamelist.write_text(
                 "<gameList><game><path>./Final Fantasy VII.m3u</path>"
                 "<name>Final Fantasy VII</name><desc>A classic.</desc>"
+                "<genre>RPG</genre><developer>Square</developer><publisher>Sony</publisher>"
+                "<releasedate>19970131T000000</releasedate><players>1</players><rating>0.95</rating>"
                 "<manual>./downloaded_media/psx/manuals/Final Fantasy VII.pdf</manual>"
                 "</game></gameList>",
                 encoding="utf-8",
@@ -33,6 +35,10 @@ class ESDEMetadataTests(unittest.TestCase):
             result = ESDEMetadataIndex(esde, rom_root).lookup(str(rom))
             self.assertEqual(result["name"], "Final Fantasy VII")
             self.assertEqual(result["desc"], "A classic.")
+            self.assertEqual({key: result[key] for key in ("genre", "developer", "publisher", "releasedate", "players", "rating")}, {
+                "genre": "RPG", "developer": "Square", "publisher": "Sony",
+                "releasedate": "19970131T000000", "players": "1", "rating": "0.95",
+            })
             self.assertEqual(result["image"], str(cover))
             self.assertEqual(result["manual"], str(manual))
 
