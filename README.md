@@ -6,7 +6,7 @@ It does not replace EmuDeck and does not require EmuDecky.
 
 ## Current status
 
-Version 0.15.0 includes:
+Version 0.16.0 includes:
 
 - automatic process and ROM detection through `/proc`;
 - data-driven profiles for Cemu, DuckStation, PCSX2, Dolphin, RetroArch,
@@ -36,10 +36,11 @@ bundled hotkeys are baseline defaults and must be validated against the
 actual EmuDeck/emulator configuration before a store release. Steam Deck Gaming
 Mode hardware tests are still required.
 
-RetroArch's native menu is intentionally not exposed: a clean EmuDeck profile
-disables its keyboard menu binding and Decky cannot safely inject the configured
-gamepad chord into the active controller. Supported RetroArch operations remain
-available directly as controller-friendly QAM actions.
+RetroArch native commands add menu navigation and support keyboard bindings set
+to `nul`, after explicit activation. See the
+[setup, backup and network security guide](docs/retroarch-native-commands.md).
+Rewind hold remains unavailable. Command delivery is not execution confirmation;
+Steam Deck hardware validation is still required.
 
 PPSSPP and melonDS shortcuts mirror EmuDeck's shipped emulator configuration.
 PPSSPP's Quick Menu remains available because its native interface supports
@@ -95,9 +96,10 @@ sudo systemctl start plugin_loader
 Stopping Decky before pulling prevents its development hot reload from racing
 with a service restart while plugin files are changing.
 
-Settings use Decky's current `DECKY_PLUGIN_SETTINGS_DIR`. No system files or
-EmuDeck configuration are modified. Favorites and UI preferences are validated
-before being written atomically to the plugin's `settings.json`.
+Settings use Decky's current `DECKY_PLUGIN_SETTINGS_DIR`. No system files are
+modified. Optional RetroArch network setup changes its enable flag only after
+confirmation and backup, leaving binds unchanged. Favorites and UI preferences
+are validated before being written atomically to the plugin's `settings.json`.
 
 ## Architecture
 

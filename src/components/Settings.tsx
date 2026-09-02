@@ -1,5 +1,6 @@
 import { ButtonItem, PanelSection, PanelSectionRow, SliderField, ToggleField } from "@decky/ui";
 import type { CompanionSettings, EmulatorSession, GameOverride } from "../types";
+import { RetroArchSetup } from "./RetroArchSetup";
 
 interface Props {
   settings: CompanionSettings;
@@ -71,6 +72,7 @@ export function Settings({ settings, session, onChange }: Props) {
 
   return (
     <>
+      <RetroArchSetup />
       <PanelSection title="Settings">
         <ToggleField
           label="Action notifications"

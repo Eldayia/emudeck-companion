@@ -57,7 +57,7 @@ class SessionManager:
         if self.current is not None and self.current.pid == process.pid:
             capabilities = contextual_capabilities(profile, self.current.rom)
             if len(self.current.discs) <= 1:
-                capabilities = [a for a in capabilities if a not in {"previous_disc", "next_disc"}]
+                capabilities = [a for a in capabilities if a not in {"previous_disc", "next_disc", "disk_eject"}]
             if self.current.actions != profile["actions"]:
                 self.current.toggles.clear()
             self.current.actions = dict(profile["actions"])
@@ -75,7 +75,7 @@ class SessionManager:
         metadata = self.metadata_provider(rom) if self.metadata_provider else {}
         capabilities = contextual_capabilities(profile, rom)
         if len(discs) <= 1:
-            capabilities = [action for action in capabilities if action not in {"previous_disc", "next_disc"}]
+            capabilities = [action for action in capabilities if action not in {"previous_disc", "next_disc", "disk_eject"}]
         self.current = Session(
             emulator=profile["id"],
             emulator_name=profile["name"],

@@ -93,6 +93,7 @@ const exportDiagnostics = callable("export_diagnostics");
 callable("reload_profiles");
 const getSettings = callable("get_settings");
 const updateSettings = callable("update_settings");
+const configureRetroArchNetwork = callable("configure_retroarch_network");
 
 function Diagnostics({ data, onRefresh }) {
     const copyDiagnostics = async () => {
@@ -133,6 +134,12 @@ function Diagnostics({ data, onRefresh }) {
     ];
     const config = data.session?.hotkey_config;
     if (config?.status) {
+        if (config.native_commands) {
+            const native = config.native_commands;
+            rows.push(["RetroArch native commands", `${native.status} — localhost:${native.port}${native.version ? ` — ${native.version}` : ""}`]);
+            rows.push(["Native interface details", native.reason]);
+            rows.push(["Network commands on disk", config.network_settings?.enabled_on_disk ? "Enabled (restart required after changes)" : "Disabled or absent; live endpoint checked separately"]);
+        }
         rows.push(["Hotkey configuration", `${config.status} — ${config.path ?? ""}`]);
         rows.push(["Hotkey scope", config.scope ?? "Global settings"]);
         if (config.paths && config.paths.length > 1) {
@@ -184,8 +191,9 @@ const groups = [
     { title: "Save States", actions: ["save_state", "load_state"] },
     { title: "Emulation", actions: ["pause", "fast_forward", "rewind"] },
     { title: "Display", actions: ["swap_screen", "screen_layout", "rotate_screen", "lid", "docked_mode", "fullscreen"] },
-    { title: "Disc", actions: ["previous_disc", "next_disc"] },
+    { title: "Disc", actions: ["disk_eject", "previous_disc", "next_disc"] },
     { title: "Other", actions: ["screenshot", "mute", "emulator_menu"] },
+    { title: "RetroArch Menu Navigation", actions: ["menu_up", "menu_down", "menu_left", "menu_right", "menu_confirm", "menu_back"] },
     { title: "Session", actions: ["quit"] },
 ];
 function stateTimestamp(timestamp) {
@@ -209,7 +217,7 @@ function EmulatorActions({ session, favorites, busyAction, onAction }) {
                 const actions = group.actions.filter((action) => supported.has(action) && session.actions[action]);
                 if (actions.length === 0)
                     return null;
-                return (SP_JSX.jsxs(DFL.PanelSection, { title: group.title, children: [group.title === "Save States" && hasSlots && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: { width: "100%", textAlign: "center", opacity: 0.8 }, children: ["Current slot: ", SP_JSX.jsx("b", { children: session.slot })] }) }), session.savestates.slice(0, 5).map((state) => (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: { width: "100%", display: "flex", justifyContent: "space-between", opacity: 0.68, fontSize: "12px" }, children: [SP_JSX.jsx("span", { children: state.slot === null ? "State" : `Slot ${state.slot}` }), SP_JSX.jsx("span", { children: stateTimestamp(state.modified_at) })] }) }, state.path)))] })), actions.map(actionButton), group.title === "Save States" && hasSlots && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: busyAction !== null, onClick: () => void onAction("slot_previous"), children: "Previous Slot" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: busyAction !== null, onClick: () => void onAction("slot_next"), children: "Next Slot" }) })] }))] }, group.title));
+                return (SP_JSX.jsxs(DFL.PanelSection, { title: group.title, children: [group.title === "Save States" && hasSlots && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: { width: "100%", textAlign: "center", opacity: 0.8 }, children: [session.actions.save_state?.method === "retroarch_udp" ? "Estimated slot" : "Current slot", ": ", SP_JSX.jsx("b", { children: session.slot })] }) }), session.savestates.slice(0, 5).map((state) => (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: { width: "100%", display: "flex", justifyContent: "space-between", opacity: 0.68, fontSize: "12px" }, children: [SP_JSX.jsx("span", { children: state.slot === null ? "State" : `Slot ${state.slot}` }), SP_JSX.jsx("span", { children: stateTimestamp(state.modified_at) })] }) }, state.path)))] })), actions.map(actionButton), group.title === "Save States" && hasSlots && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: busyAction !== null, onClick: () => void onAction("slot_previous"), children: "Previous Slot" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: busyAction !== null, onClick: () => void onAction("slot_next"), children: "Next Slot" }) })] }))] }, group.title));
             })] }));
 }
 
@@ -278,6 +286,29 @@ function Hotkeys({ session }) {
                             }, children: [SP_JSX.jsxs("span", { children: [definition.label, definition.binding_source && (SP_JSX.jsx("div", { style: { opacity: 0.55, fontSize: "11px" }, children: definition.binding_source }))] }), SP_JSX.jsx("span", { style: { opacity: 0.72, whiteSpace: "nowrap" }, children: definition.keys?.map((key) => formatKey(key, session.slot)).join(" + ") })] }) }, action)))] }))] }));
 }
 
+function RetroArchSetup() {
+    const [confirmation, setConfirmation] = SP_REACT.useState(null);
+    const [busy, setBusy] = SP_REACT.useState(false);
+    const [result, setResult] = SP_REACT.useState("");
+    const configure = async (enabled) => {
+        setBusy(true);
+        try {
+            const response = await configureRetroArchNetwork(enabled);
+            setResult(`${response.message}${response.backup ? ` Backup: ${response.backup}` : ""}`);
+            toaster.toast({ title: response.ok ? "RetroArch configuration" : "Cannot configure RetroArch", body: response.message });
+        }
+        catch (error) {
+            setResult(String(error));
+            toaster.toast({ title: "Cannot configure RetroArch", body: String(error) });
+        }
+        finally {
+            setBusy(false);
+            setConfirmation(null);
+        }
+    };
+    return (SP_JSX.jsxs(DFL.PanelSection, { title: "RetroArch Native Commands", children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: { fontSize: "12px", overflowWrap: "anywhere" }, children: "Close RetroArch completely first. This changes only network_cmd_enable in the standard RetroArch Flatpak configuration, with a backup. Controller and keyboard binds stay unchanged. Relaunch RetroArch afterwards (version 1.19+)." }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: { fontSize: "12px" }, children: "Security: RetroArch's command port has no authentication and may be reachable from your local network. Companion sends only to localhost but does not restrict incoming connections or change your firewall. Enable only on a trusted network." }) }), confirmation === null ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: busy, onClick: () => setConfirmation(true), children: "Enable Native Commands\u2026" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: busy, onClick: () => setConfirmation(false), children: "Disable Native Commands\u2026" }) })] })) : (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: busy, onClick: () => void configure(confirmation), children: busy ? "Working…" : `Confirm ${confirmation ? "Enable" : "Disable"} Native Commands` }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: busy, onClick: () => setConfirmation(null), children: "Cancel" }) })] })), result && SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: { fontSize: "12px", overflowWrap: "anywhere" }, children: result }) })] }));
+}
+
 function Settings({ settings, session, onChange }) {
     const emulatorFavorites = session ? (settings.favorites[session.emulator] ?? []) : [];
     const availableActions = session
@@ -340,7 +371,7 @@ function Settings({ settings, session, onChange }) {
             : current.filter((item) => item !== action);
         return saveGameOverride({ ...gameOverride, favorites: selected });
     };
-    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.PanelSection, { title: "Settings", children: [SP_JSX.jsx(DFL.ToggleField, { label: "Action notifications", description: "Show a notification after successful actions", checked: settings.notifications, onChange: (checked) => void onChange({ notifications: checked }) }), SP_JSX.jsx(DFL.ToggleField, { label: "Show platform", checked: settings.show_platform, onChange: (checked) => void onChange({ show_platform: checked }) }), SP_JSX.jsx(DFL.ToggleField, { label: "Show emulator", checked: settings.show_emulator, onChange: (checked) => void onChange({ show_emulator: checked }) }), SP_JSX.jsx(DFL.ToggleField, { label: "Show session time", checked: settings.show_session_time, onChange: (checked) => void onChange({ show_session_time: checked }) }), SP_JSX.jsx(DFL.SliderField, { label: "Detection interval", description: "How often Companion checks the active emulator", value: settings.detection_interval_ms, min: 1000, max: 5000, step: 250, showValue: true, valueSuffix: " ms", onChange: (value) => void onChange({ detection_interval_ms: value }) })] }), session && availableActions.length > 0 && (SP_JSX.jsx(DFL.PanelSection, { title: `Favorites — ${session.emulator_name}`, children: availableActions.map((action) => {
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(RetroArchSetup, {}), SP_JSX.jsxs(DFL.PanelSection, { title: "Settings", children: [SP_JSX.jsx(DFL.ToggleField, { label: "Action notifications", description: "Show a notification after successful actions", checked: settings.notifications, onChange: (checked) => void onChange({ notifications: checked }) }), SP_JSX.jsx(DFL.ToggleField, { label: "Show platform", checked: settings.show_platform, onChange: (checked) => void onChange({ show_platform: checked }) }), SP_JSX.jsx(DFL.ToggleField, { label: "Show emulator", checked: settings.show_emulator, onChange: (checked) => void onChange({ show_emulator: checked }) }), SP_JSX.jsx(DFL.ToggleField, { label: "Show session time", checked: settings.show_session_time, onChange: (checked) => void onChange({ show_session_time: checked }) }), SP_JSX.jsx(DFL.SliderField, { label: "Detection interval", description: "How often Companion checks the active emulator", value: settings.detection_interval_ms, min: 1000, max: 5000, step: 250, showValue: true, valueSuffix: " ms", onChange: (value) => void onChange({ detection_interval_ms: value }) })] }), session && availableActions.length > 0 && (SP_JSX.jsx(DFL.PanelSection, { title: `Favorites — ${session.emulator_name}`, children: availableActions.map((action) => {
                     const checked = emulatorFavorites.includes(action);
                     return (SP_JSX.jsx(DFL.ToggleField, { label: session.actions[action].label, description: checked ? "Shown in Favorites" : "", checked: checked, disabled: !checked && emulatorFavorites.length >= 4, onChange: (value) => void toggleFavorite(action, value) }, action));
                 }) })), session?.game_key && availableActions.length > 0 && (SP_JSX.jsxs(DFL.PanelSection, { title: `Game Overrides — ${session.game ?? "Current Game"}`, children: [SP_JSX.jsx(DFL.ToggleField, { label: "Use game-specific favorites", description: gameFavorites === undefined ? `Inherited from ${session.emulator_name}` : "Overrides emulator favorites", checked: gameFavorites !== undefined, onChange: (enabled) => void useGameFavorites(enabled) }), availableActions.map((action) => (SP_JSX.jsx(DFL.ToggleField, { label: session.actions[action].label, description: "Show this action for this game", checked: !hiddenActions.includes(action), onChange: (visible) => void toggleGameAction(action, visible) }, action))), gameOverride !== undefined && (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => void onChange({

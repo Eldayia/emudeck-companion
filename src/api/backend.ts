@@ -11,3 +11,6 @@ export const exportDiagnostics = callable<[], { ok: boolean; path: string }>("ex
 export const reloadProfiles = callable<[], { ok: boolean; count: number }>("reload_profiles");
 export const getSettings = callable<[], CompanionSettings>("get_settings");
 export const updateSettings = callable<[changes: Partial<CompanionSettings>], CompanionSettings>("update_settings");
+export const configureRetroArchNetwork = callable<
+  [enabled: boolean], { ok: boolean; message: string; path?: string; backup?: string }
+>("configure_retroarch_network");

@@ -1,4 +1,10 @@
-# RetroArch hotkey configuration (0.15.0)
+# RetroArch keyboard hotkey configuration (0.16.0)
+
+For EmuDeck setups with keyboard bindings set to `nul`, see
+[native commands and explicit activation](retroarch-native-commands.md). A verified
+native endpoint takes priority over the keyboard path described below, including
+menu control. Only the explicit setup button writes `network_cmd_enable`; the
+keyboard resolver itself remains read-only.
 
 RetroArch and FinalBurn Neo running in RetroArch now resolve keyboard shortcuts
 from configuration files. All reads are local and read-only: Companion does not

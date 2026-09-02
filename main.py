@@ -28,6 +28,9 @@ from companion_hotkey_config import DuckStationHotkeyConfig
 from companion_models import ActionResult, ProcessInfo
 from companion_profiles import ProfileStore
 from companion_retroarch_config import RetroArchHotkeyConfig
+from companion_retroarch_commands import RetroArchCommands, settings_actions
+from companion_retroarch_setup import configure_network
+from companion_process_detection import iter_processes, find_emulator
 from companion_savestates import SavestateIndex
 from companion_session import SessionManager
 
@@ -52,6 +55,7 @@ class Plugin:
             "Document server started on localhost:%s",
             self.document_server.diagnostics()["port"],
         )
+        self.retroarch_commands = RetroArchCommands()
         self.hotkey_readers = (
             DuckStationHotkeyConfig(Path(decky.DECKY_USER_HOME)),
             RetroArchHotkeyConfig(Path(decky.DECKY_USER_HOME)),
@@ -63,7 +67,7 @@ class Plugin:
             document_provider=self.document_index.lookup,
             profile_provider=self._resolve_hotkey_profile,
         )
-        self.action_engine = ActionEngine(frontend_input=True)
+        self.action_engine = ActionEngine(frontend_input=True, native_commands=self.retroarch_commands)
         self.last_action: dict[str, Any] | None = None
         self.settings_path = Path(decky.DECKY_PLUGIN_SETTINGS_DIR) / "settings.json"
         self.settings = self._load_settings()
@@ -71,9 +75,25 @@ class Plugin:
         decky.logger.info("EmuDeck Companion loaded with %d profiles", len(self.profile_store.profiles))
 
     def _resolve_hotkey_profile(self, profile: dict[str, Any], process: ProcessInfo) -> dict[str, Any]:
+        original = profile
         for reader in self.hotkey_readers:
             profile = reader(profile, process)
-        return profile
+        return self.retroarch_commands.apply(original, profile, process)
+
+    async def configure_retroarch_network(self, enabled: bool) -> dict[str, Any]:
+        async with self._lock:
+            profiles = [p for p in self.profile_store.profiles if p.get("hotkey_config_format") == "retroarch"]
+            if find_emulator(profiles, iter_processes()) is not None:
+                return {"ok": False, "message": "Close RetroArch completely before changing this setting"}
+            try:
+                result = await asyncio.to_thread(
+                    configure_network, Path(decky.DECKY_USER_HOME),
+                    self.settings_path.parent / "retroarch-backups", enabled,
+                )
+            except (OSError, ValueError) as error:
+                return {"ok": False, "message": str(error)}
+            decky.logger.info("RetroArch network setup: %s; backup: %s", result["message"], result.get("backup", "unchanged"))
+            return result
 
     def _build_metadata_index(self) -> ESDEMetadataIndex:
         value = self.emudeck
@@ -131,7 +151,7 @@ class Plugin:
                 profile = self.profile_store.get(str(profile_id))
                 if profile is None or not isinstance(actions, list):
                     continue
-                allowed = profile["actions"]
+                allowed = settings_actions(profile)
                 selected: list[str] = []
                 for action in actions:
                     if isinstance(action, str) and action in allowed and action not in selected:
@@ -147,6 +167,7 @@ class Plugin:
                 profile = self.profile_store.get(key.split(":", 1)[0])
                 if profile is None:
                     continue
+                allowed = settings_actions(profile)
                 normalized: dict[str, list[str]] = {}
                 raw_hidden = override.get("hidden_actions", [])
                 hidden: list[str] = []
@@ -154,7 +175,7 @@ class Plugin:
                     for action in raw_hidden:
                         if (
                             isinstance(action, str)
-                            and action in profile["actions"]
+                            and action in allowed
                             and action not in hidden
                         ):
                             hidden.append(action)
@@ -166,7 +187,7 @@ class Plugin:
                     for action in raw_game_favorites:
                         if (
                             isinstance(action, str)
-                            and action in profile["actions"]
+                            and action in allowed
                             and action not in hidden
                             and action not in selected
                         ):
@@ -276,6 +297,8 @@ class Plugin:
             if self.action_engine.frontend_input
             else self.action_engine.backend.name if self.action_engine.backend else None
         )
+        if session and any(a.get("method") == "retroarch_udp" for a in session.actions.values()):
+            backend_name = "RetroArch native commands (UDP loopback)"
         diagnostics = build_diagnostics(
             session_payload(session, self.settings) if session else None,
             self.emudeck,

@@ -5,7 +5,7 @@ import tempfile
 import types
 import unittest
 from pathlib import Path
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 from companion_models import ProcessInfo, Session
 
@@ -98,6 +98,27 @@ class PluginIntegrationTests(unittest.IsolatedAsyncioTestCase):
                 self.assertEqual(report["input_backend"], "SteamClient.Input")
                 self.assertTrue(report["document_server"]["running"])
                 self.assertFalse(Path(directory, "diagnostics.tmp").exists())
+                native_settings = await plugin.update_settings({
+                    "favorites": {"retroarch": ["emulator_menu", "menu_confirm", "invalid"]},
+                    "game_overrides": {"retroarch:game.n64": {
+                        "hidden_actions": ["menu_up", "invalid"], "favorites": ["menu_back", "invalid"],
+                    }},
+                })
+                self.assertEqual(native_settings["favorites"]["retroarch"], ["emulator_menu", "menu_confirm"])
+                self.assertEqual(native_settings["game_overrides"]["retroarch:game.n64"], {
+                    "hidden_actions": ["menu_up"], "favorites": ["menu_back"],
+                })
+                with patch.object(plugin_module, "iter_processes", return_value=iter([ProcessInfo(42, "retroarch", ("retroarch",))])), \
+                     patch.object(plugin_module, "configure_network") as configure:
+                    response = await plugin.configure_retroarch_network(True)
+                    self.assertFalse(response["ok"])
+                    self.assertIn("Close RetroArch", response["message"])
+                    configure.assert_not_called()
+                with patch.object(plugin_module, "iter_processes", return_value=iter([])), \
+                     patch.object(plugin_module, "configure_network", return_value={"ok": True, "message": "Enabled"}) as configure:
+                    response = await plugin.configure_retroarch_network(True)
+                    self.assertTrue(response["ok"])
+                    configure.assert_called_once_with(Path(directory), Path(directory) / "retroarch-backups", True)
                 await plugin._unload()
                 self.assertFalse(plugin.document_server.diagnostics()["running"])
             finally:

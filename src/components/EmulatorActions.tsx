@@ -5,8 +5,9 @@ const groups: Array<{ title: string; actions: string[] }> = [
   { title: "Save States", actions: ["save_state", "load_state"] },
   { title: "Emulation", actions: ["pause", "fast_forward", "rewind"] },
   { title: "Display", actions: ["swap_screen", "screen_layout", "rotate_screen", "lid", "docked_mode", "fullscreen"] },
-  { title: "Disc", actions: ["previous_disc", "next_disc"] },
+  { title: "Disc", actions: ["disk_eject", "previous_disc", "next_disc"] },
   { title: "Other", actions: ["screenshot", "mute", "emulator_menu"] },
+  { title: "RetroArch Menu Navigation", actions: ["menu_up", "menu_down", "menu_left", "menu_right", "menu_confirm", "menu_back"] },
   { title: "Session", actions: ["quit"] },
 ];
 
@@ -63,7 +64,7 @@ export function EmulatorActions({ session, favorites, busyAction, onAction }: Pr
               <>
                 <PanelSectionRow>
                   <div style={{ width: "100%", textAlign: "center", opacity: 0.8 }}>
-                    Current slot: <b>{session.slot}</b>
+                    {session.actions.save_state?.method === "retroarch_udp" ? "Estimated slot" : "Current slot"}: <b>{session.slot}</b>
                   </div>
                 </PanelSectionRow>
                 {session.savestates.slice(0, 5).map((state) => (

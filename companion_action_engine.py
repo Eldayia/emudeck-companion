@@ -16,9 +16,11 @@ class ActionEngine:
         backend: InputBackend | None = None,
         debounce_ms: int = 250,
         frontend_input: bool = False,
+        native_commands=None,
     ) -> None:
         self.backend = backend if backend is not None else select_input_backend()
         self.frontend_input = frontend_input
+        self.native_commands = native_commands
         self.debounce_seconds = debounce_ms / 1000
         self._last_actions: dict[str, float] = {}
 
@@ -50,6 +52,11 @@ class ActionEngine:
                     dispatch = self.backend.name
                 else:
                     return ActionResult(False, action, "No compatible virtual input backend is available")
+            elif method == "retroarch_udp":
+                if self.native_commands is None:
+                    raise ValueError("RetroArch native commands unavailable")
+                await asyncio.to_thread(self.native_commands.execute, session, action)
+                dispatch = "retroarch_udp"
             elif method == "select_slot":
                 # Some emulators address slots directly in their save/load shortcuts.
                 # Changing the Companion selection therefore requires no injected key.
@@ -97,10 +104,13 @@ class ActionEngine:
         )
         if action in {"previous_disc", "next_disc"} and session.current_disc is not None:
             suffix = f" — Disc {session.current_disc}/{len(session.discs)}"
+        if dispatch == "retroarch_udp":
+            # Neither slot nor disc selection is acknowledged or synchronized.
+            suffix = ""
         return ActionResult(
             True,
             action,
-            f"{label}{suffix}",
+            f"{label}{suffix}" + (" — command sent, execution not confirmed" if dispatch == "retroarch_udp" else ""),
             slot=slot,
             active=active,
             keys=keys,

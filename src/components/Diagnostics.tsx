@@ -41,6 +41,12 @@ export function Diagnostics({ data, onRefresh }: { data: DiagnosticsData; onRefr
   ];
   const config = data.session?.hotkey_config;
   if (config?.status) {
+    if (config.native_commands) {
+      const native = config.native_commands;
+      rows.push(["RetroArch native commands", `${native.status} — localhost:${native.port}${native.version ? ` — ${native.version}` : ""}`]);
+      rows.push(["Native interface details", native.reason]);
+      rows.push(["Network commands on disk", config.network_settings?.enabled_on_disk ? "Enabled (restart required after changes)" : "Disabled or absent; live endpoint checked separately"]);
+    }
     rows.push(["Hotkey configuration", `${config.status} — ${config.path ?? ""}`]);
     rows.push(["Hotkey scope", config.scope ?? "Global settings"]);
     if (config.paths && config.paths.length > 1) {

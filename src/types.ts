@@ -20,6 +20,8 @@ export interface EmulatorSession {
     status?: string;
     path?: string;
     paths?: string[];
+    network_settings?: { enabled_on_disk: boolean; port: number };
+    native_commands?: { status: string; port: number; version?: string; reason: string };
     overrides?: {
       status: string;
       reason?: string;

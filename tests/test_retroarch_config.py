@@ -68,6 +68,17 @@ class RetroArchConfigTests(unittest.TestCase):
         self.assertEqual(result["actions"]["load_state"]["keys"], ["leftctrl", "f4"])
         self.assertIn("default", result["actions"]["load_state"]["binding_source"])
 
+    def test_network_settings_default_custom_and_invalid_ports(self):
+        self.assertEqual(self.resolve("")["hotkey_config"]["network_settings"], {
+            "enabled_on_disk": False, "port": 55355,
+        })
+        self.assertEqual(self.resolve('network_cmd_enable = "true"\nnetwork_cmd_port = "12345"')["hotkey_config"]["network_settings"], {
+            "enabled_on_disk": True, "port": 12345,
+        })
+        for value in ("invalid", "-1", "999999", ""):
+            result = self.resolve(f'network_cmd_port = "{value}"')
+            self.assertEqual(result["hotkey_config"]["network_settings"]["port"], 0)
+
     def test_nul_and_unsupported_keyboard_binding_never_fall_back(self):
         for value in ("nul", "", "rctrl", "ctrl+f5", "keypad1", "f25"):
             result = self.resolve(f'input_save_state = "{value}"\ninput_save_state_btn = "3"\n')

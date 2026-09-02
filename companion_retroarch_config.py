@@ -27,6 +27,7 @@ HOTKEY_SETTINGS = {
 }
 CONFIG_KEYS = set(HOTKEY_SETTINGS.values()) | {
     "input_enable_hotkey", "input_hotkey_device_merge", "auto_overrides_enable", "rgui_config_directory",
+    "network_cmd_enable", "network_cmd_port",
 }
 # Exact standard core filenames and upstream retro_get_system_info library names.
 # Do not guess from display names or scan unrelated override directories.
@@ -316,6 +317,11 @@ class RetroArchHotkeyConfig:
             "status": status, "path": str(path) if path else "", "paths": [str(p) for p in visited],
             "disabled_actions": disabled,
             "overrides": overrides,
+            "network_settings": {
+                "enabled_on_disk": values.get("network_cmd_enable", "false").casefold() in {"true", "1"},
+                "port": int(values.get("network_cmd_port", "55355"))
+                if re.fullmatch(r"[0-9]{1,5}", values.get("network_cmd_port", "55355")) else 0,
+            },
             "scope": "Disk configuration and supported launch-core overrides; manual runtime changes and core switches are not tracked",
         }
         return effective
