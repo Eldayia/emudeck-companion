@@ -4,9 +4,9 @@ import type { EmulatorSession } from "../types";
 const groups: Array<{ title: string; actions: string[] }> = [
   { title: "Save States", actions: ["save_state", "load_state"] },
   { title: "Emulation", actions: ["pause", "fast_forward", "rewind"] },
-  { title: "Display", actions: ["swap_screen", "screen_layout", "rotate_screen", "lid", "fullscreen"] },
+  { title: "Display", actions: ["swap_screen", "screen_layout", "rotate_screen", "lid", "docked_mode", "fullscreen"] },
   { title: "Disc", actions: ["previous_disc", "next_disc"] },
-  { title: "Other", actions: ["screenshot", "emulator_menu"] },
+  { title: "Other", actions: ["screenshot", "mute", "emulator_menu"] },
   { title: "Session", actions: ["quit"] },
 ];
 

@@ -107,9 +107,9 @@ function Diagnostics({ data, onRefresh }) {
 const groups = [
     { title: "Save States", actions: ["save_state", "load_state"] },
     { title: "Emulation", actions: ["pause", "fast_forward", "rewind"] },
-    { title: "Display", actions: ["swap_screen", "screen_layout", "rotate_screen", "lid", "fullscreen"] },
+    { title: "Display", actions: ["swap_screen", "screen_layout", "rotate_screen", "lid", "docked_mode", "fullscreen"] },
     { title: "Disc", actions: ["previous_disc", "next_disc"] },
-    { title: "Other", actions: ["screenshot", "emulator_menu"] },
+    { title: "Other", actions: ["screenshot", "mute", "emulator_menu"] },
     { title: "Session", actions: ["quit"] },
 ];
 function stateTimestamp(timestamp) {
@@ -373,7 +373,12 @@ var EControllerType;
 })(EControllerType || (EControllerType = {}));
 
 const keys = {
+    "1": EHIDKeyboardKey.Key_1,
+    "2": EHIDKeyboardKey.Key_2,
+    "3": EHIDKeyboardKey.Key_3,
+    "4": EHIDKeyboardKey.Key_4,
     a: EHIDKeyboardKey.A,
+    s: EHIDKeyboardKey.S,
     d: EHIDKeyboardKey.D,
     f: EHIDKeyboardKey.F,
     p: EHIDKeyboardKey.P,

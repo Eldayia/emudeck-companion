@@ -6,11 +6,12 @@ It does not replace EmuDeck and does not require EmuDecky.
 
 ## Current status
 
-Version 0.5 includes:
+Version 0.6 includes:
 
 - automatic process and ROM detection through `/proc`;
 - data-driven profiles for Cemu, DuckStation, PCSX2, Dolphin, RetroArch,
-  PPSSPP, melonDS, Azahar, Flycast, MAME, and FinalBurn Neo;
+  PPSSPP, melonDS, Azahar, Flycast, MAME, FinalBurn Neo, RPCS3, Ryujinx,
+  and xemu;
 - contextual QAM sections (unsupported actions are hidden);
 - save/load, slots, pause, fast-forward, display, disc, menu, screenshot, and
   graceful quit actions where the profile supports them;
@@ -52,6 +53,14 @@ Savestate, pause, and fast-forward buttons are intentionally hidden because
 EmuDeck maps those MAME functions exclusively to controller chords. FinalBurn
 Neo is detected from RetroArch's active core and keeps the proven RetroArch
 action set while displaying the correct emulator and arcade platform.
+
+RPCS3 exposes its native four savestate slots, pause, boost mode, fullscreen,
+and screenshot shortcuts. For extracted disc games, Companion derives the game
+name from the directory above `PS3_GAME` instead of displaying `EBOOT`.
+Ryujinx follows EmuDeck's shipped F-key configuration for pause, UI/fullscreen,
+screenshot, docked mode, mute, and stop. xemu sessions and Xbox ROMs are detected,
+but action buttons stay hidden because a clean EmuDeck setup does not provide
+reliable xemu keyboard shortcuts.
 
 ## Development
 

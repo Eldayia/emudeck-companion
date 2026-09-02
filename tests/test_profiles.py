@@ -14,7 +14,8 @@ class ProfileStoreTests(unittest.TestCase):
         store.load()
         self.assertEqual({profile["id"] for profile in store.profiles}, {
             "cemu", "duckstation", "pcsx2", "dolphin", "retroarch",
-            "ppsspp", "melonds", "azahar", "flycast", "mame", "fbneo"
+            "ppsspp", "melonds", "azahar", "flycast", "mame", "fbneo",
+            "rpcs3", "ryujinx", "xemu"
         })
 
     def test_phase_two_profiles_use_emudeck_hotkeys(self):
@@ -47,6 +48,20 @@ class ProfileStoreTests(unittest.TestCase):
         assert cemu is not None
         self.assertNotIn("save_state", cemu["capabilities"])
         self.assertNotIn("load_state", cemu["capabilities"])
+
+    def test_phase_three_profiles_use_supported_hotkeys_only(self):
+        store = ProfileStore(ROOT / "defaults" / "emulators")
+        store.load()
+        rpcs3 = store.get("rpcs3")
+        ryujinx = store.get("ryujinx")
+        xemu = store.get("xemu")
+        assert rpcs3 is not None and ryujinx is not None and xemu is not None
+        self.assertEqual(rpcs3["actions"]["save_state"]["keys"], ["leftctrl", "s"])
+        self.assertEqual(rpcs3["actions"]["load_state"]["keys"], ["leftalt", "leftctrl", "{slot}"])
+        self.assertEqual(ryujinx["actions"]["docked_mode"]["keys"], ["f9"])
+        self.assertEqual(ryujinx["actions"]["quit"]["keys"], ["esc"])
+        self.assertEqual(xemu["capabilities"], [])
+        self.assertEqual(xemu["actions"], {})
 
     def test_retroarch_does_not_expose_unusable_keyboard_menu(self):
         store = ProfileStore(ROOT / "defaults" / "emulators")

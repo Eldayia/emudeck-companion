@@ -1,0 +1,17 @@
+{
+  "id": "ryujinx",
+  "name": "Ryujinx",
+  "profile_version": 1,
+  "platform": "Nintendo Switch",
+  "processes": ["Ryujinx", "ryujinx", "Ryujinx.Ava", "Ryujinx.Headless.SDL2", "Ryujinx.exe"],
+  "rom_extensions": ["kip", "kp", "nca", "nro", "nso", "nsp", "nsz", "xci"],
+  "capabilities": ["pause", "fullscreen", "screenshot", "docked_mode", "mute", "quit"],
+  "actions": {
+    "pause": {"label": "Pause / Resume", "method": "hotkey", "keys": ["f5"], "mode": "toggle"},
+    "fullscreen": {"label": "Toggle UI / Fullscreen", "method": "hotkey", "keys": ["f4"], "mode": "toggle"},
+    "screenshot": {"label": "Screenshot", "method": "hotkey", "keys": ["f8"]},
+    "docked_mode": {"label": "Docked / Handheld Mode", "method": "hotkey", "keys": ["f9"], "mode": "toggle"},
+    "mute": {"label": "Mute / Unmute", "method": "hotkey", "keys": ["f2"], "mode": "toggle"},
+    "quit": {"label": "Stop Emulation", "method": "hotkey", "keys": ["esc"]}
+  }
+}

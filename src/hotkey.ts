@@ -4,7 +4,12 @@ import { EHIDKeyboardKey } from "@decky/ui/dist/globals/steam-client/Input";
 declare const SteamClient: SteamClient;
 
 const keys: Record<string, EHIDKeyboardKey> = {
+  "1": EHIDKeyboardKey.Key_1,
+  "2": EHIDKeyboardKey.Key_2,
+  "3": EHIDKeyboardKey.Key_3,
+  "4": EHIDKeyboardKey.Key_4,
   a: EHIDKeyboardKey.A,
+  s: EHIDKeyboardKey.S,
   d: EHIDKeyboardKey.D,
   f: EHIDKeyboardKey.F,
   p: EHIDKeyboardKey.P,

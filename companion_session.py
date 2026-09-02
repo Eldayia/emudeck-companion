@@ -64,7 +64,7 @@ class SessionManager:
             pid=process.pid,
             argv=list(process.argv),
             rom=rom,
-            game=metadata.get("name") or game_name_from_rom(rom),
+            game=metadata.get("name") or game_name_from_rom(rom, profile),
             platform=profile.get("platform"),
             capabilities=capabilities,
             actions=dict(profile["actions"]),

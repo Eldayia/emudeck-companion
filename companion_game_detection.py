@@ -29,10 +29,18 @@ def extract_rom(argv: Iterable[str], profile: dict) -> str | None:
     return candidates[-1] if candidates else None
 
 
-def game_name_from_rom(rom: str | None) -> str | None:
+def game_name_from_rom(rom: str | None, profile: dict | None = None) -> str | None:
     if not rom:
         return None
-    name = Path(rom.replace("\\", "/")).stem
+    path = Path(rom.replace("\\", "/"))
+    markers = {
+        str(marker).casefold() for marker in (profile or {}).get("game_name_parent_markers", [])
+    }
+    marker_index = next(
+        (index for index, part in enumerate(path.parts) if part.casefold() in markers),
+        None,
+    )
+    name = path.parts[marker_index - 1] if marker_index is not None and marker_index > 0 else path.stem
     name = re.sub(r"\s*[\[(](?:disc|disk|cd)\s*\d+[^\])]?[\])]\s*$", "", name, flags=re.I)
     name = re.sub(r"\s+", " ", name.replace("_", " ")).strip()
     return name or None

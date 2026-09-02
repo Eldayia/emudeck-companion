@@ -1,0 +1,10 @@
+{
+  "id": "xemu",
+  "name": "xemu",
+  "profile_version": 1,
+  "platform": "Xbox",
+  "processes": ["xemu", "xemu.AppImage", "xemu.exe"],
+  "rom_extensions": ["iso"],
+  "capabilities": [],
+  "actions": {}
+}

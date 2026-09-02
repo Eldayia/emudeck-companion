@@ -49,6 +49,11 @@ class GameDetectionTests(unittest.TestCase):
         argv = ["flycast", "/home/deck/Emulation/roms/naomi/Crazy Taxi.zip"]
         self.assertEqual(extract_rom(argv, profile), "/home/deck/Emulation/roms/naomi/Crazy Taxi.zip")
 
+    def test_uses_folder_before_rpcs3_game_marker(self):
+        profile = {"game_name_parent_markers": ["PS3_GAME"]}
+        rom = "/home/deck/Emulation/roms/ps3/Demon's Souls/PS3_GAME/USRDIR/EBOOT.BIN"
+        self.assertEqual(game_name_from_rom(rom, profile), "Demon's Souls")
+
 
 if __name__ == "__main__":
     unittest.main()

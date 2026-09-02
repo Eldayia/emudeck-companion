@@ -1,0 +1,21 @@
+{
+  "id": "rpcs3",
+  "name": "RPCS3",
+  "profile_version": 1,
+  "platform": "PlayStation 3",
+  "processes": ["rpcs3", "RPCS3", "rpcs3.AppImage", "rpcs3.exe"],
+  "rom_extensions": ["bin", "iso"],
+  "game_name_parent_markers": ["PS3_GAME"],
+  "default_slot": 1,
+  "capabilities": ["save_state", "load_state", "slot_previous", "slot_next", "pause", "fast_forward", "fullscreen", "screenshot"],
+  "actions": {
+    "save_state": {"label": "Save State", "method": "hotkey", "keys": ["leftctrl", "s"], "show_slot": false},
+    "load_state": {"label": "Load State", "method": "hotkey", "keys": ["leftalt", "leftctrl", "{slot}"]},
+    "slot_previous": {"label": "Previous Slot", "method": "select_slot", "minimum": 1, "maximum": 4},
+    "slot_next": {"label": "Next Slot", "method": "select_slot", "minimum": 1, "maximum": 4},
+    "pause": {"label": "Pause / Resume", "method": "hotkey", "keys": ["leftctrl", "p"], "mode": "toggle"},
+    "fast_forward": {"label": "Boost Mode", "method": "hotkey", "keys": ["leftctrl", "f10"], "mode": "toggle"},
+    "fullscreen": {"label": "Fullscreen", "method": "hotkey", "keys": ["leftalt", "enter"], "mode": "toggle"},
+    "screenshot": {"label": "Screenshot", "method": "hotkey", "keys": ["f12"]}
+  }
+}

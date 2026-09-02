@@ -107,6 +107,24 @@ class ProcessDetectionTests(unittest.TestCase):
         )]
         self.assertIsNone(find_emulator(profiles, processes))
 
+    def test_matches_phase_three_emulators(self):
+        profiles = [
+            {"id": "rpcs3", "processes": ["rpcs3"]},
+            {"id": "ryujinx", "processes": ["Ryujinx"]},
+            {"id": "xemu", "processes": ["xemu"]},
+        ]
+        cases = [
+            ProcessInfo(90, "rpcs3", ("rpcs3", "--no-gui", "/roms/ps3/Game/PS3_GAME/USRDIR/EBOOT.BIN"), 900),
+            ProcessInfo(91, "Ryujinx", ("/home/deck/Applications/publish/Ryujinx", "/roms/switch/Game.nsp"), 901),
+            ProcessInfo(92, "xemu", ("xemu", "-full-screen", "-dvd_path", "/roms/xbox/Game.iso"), 902),
+        ]
+        for expected, process in zip(("rpcs3", "ryujinx", "xemu"), cases):
+            with self.subTest(emulator=expected):
+                match = find_emulator(profiles, [process])
+                self.assertIsNotNone(match)
+                assert match is not None
+                self.assertEqual(match[0]["id"], expected)
+
 
 if __name__ == "__main__":
     unittest.main()
