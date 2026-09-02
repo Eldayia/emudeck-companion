@@ -1,4 +1,5 @@
 import tempfile
+import time
 import unittest
 from pathlib import Path
 from urllib.request import Request, urlopen
@@ -42,6 +43,23 @@ class DocumentServerTests(unittest.TestCase):
                 self.assertIsNone(server.url_for(unsupported))
             finally:
                 server.stop()
+
+    def test_repeated_start_and_stop_is_fast_and_idempotent(self):
+        server = DocumentServer()
+        for _ in range(3):
+            server.start()
+            first = server.diagnostics()
+            self.assertTrue(first["running"])
+            self.assertIsInstance(first["port"], int)
+
+            started = time.monotonic()
+            server.stop()
+            self.assertLess(time.monotonic() - started, 0.3)
+            self.assertEqual(
+                server.diagnostics(),
+                {"running": False, "port": None, "registered_documents": 0},
+            )
+            server.stop()
 
 
 if __name__ == "__main__":

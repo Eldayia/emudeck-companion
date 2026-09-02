@@ -44,6 +44,10 @@ class Plugin:
         self.document_index = self._build_document_index()
         self.document_server = DocumentServer()
         self.document_server.start()
+        decky.logger.info(
+            "Document server started on localhost:%s",
+            self.document_server.diagnostics()["port"],
+        )
         self.session_manager = SessionManager(
             self.profile_store,
             metadata_provider=self.metadata_index.lookup,
@@ -76,12 +80,12 @@ class Plugin:
 
     async def _unload(self) -> None:
         await self.action_engine.release_all()
-        self.document_server.stop()
+        await asyncio.to_thread(self.document_server.stop)
         decky.logger.info("EmuDeck Companion unloaded")
 
     async def _uninstall(self) -> None:
         await self.action_engine.release_all()
-        self.document_server.stop()
+        await asyncio.to_thread(self.document_server.stop)
 
     def _load_settings(self) -> dict[str, Any]:
         defaults = {
@@ -218,9 +222,11 @@ class Plugin:
                 if self.action_engine.frontend_input
                 else self.action_engine.backend.name if self.action_engine.backend else None
             )
-            return build_diagnostics(
+            diagnostics = build_diagnostics(
                 session.as_dict() if session else None,
                 self.emudeck,
                 backend_name,
                 self.last_action,
             )
+            diagnostics["document_server"] = self.document_server.diagnostics()
+            return diagnostics

@@ -6,7 +6,7 @@ It does not replace EmuDeck and does not require EmuDecky.
 
 ## Current status
 
-Version 0.8.2 includes:
+Version 0.8.3 includes:
 
 - automatic process and ROM detection through `/proc`;
 - data-driven profiles for Cemu, DuckStation, PCSX2, Dolphin, RetroArch,
@@ -86,9 +86,14 @@ The prebuilt `dist/index.js` is committed so a Steam Deck checkout can be
 updated without installing Node.js or pnpm:
 
 ```sh
+sudo systemctl stop plugin_loader
+cd ~/homebrew/plugins/EmuDeck-Companion
 git pull --ff-only origin main
-sudo systemctl restart plugin_loader
+sudo systemctl start plugin_loader
 ```
+
+Stopping Decky before pulling prevents its development hot reload from racing
+with a service restart while plugin files are changing.
 
 Settings use Decky's current `DECKY_PLUGIN_SETTINGS_DIR`. No system files or
 EmuDeck configuration are modified. Favorites and UI preferences are validated

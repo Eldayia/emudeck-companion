@@ -102,6 +102,12 @@ function Diagnostics({ data, onRefresh }) {
         ["Game", data.session?.game ?? "—"],
         ["ROM", data.session?.rom ?? "—"],
         ["Input backend", data.input_backend],
+        [
+            "Document server",
+            data.document_server.running
+                ? `Running on localhost:${data.document_server.port}`
+                : "Stopped",
+        ],
         ["Last action", data.last_action?.message ?? "None"],
     ];
     return (SP_JSX.jsxs(DFL.PanelSection, { title: "Diagnostics", children: [rows.map(([label, value]) => (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: { width: "100%" }, children: [SP_JSX.jsx("div", { style: { opacity: 0.55, fontSize: "12px" }, children: label }), SP_JSX.jsx("div", { style: { overflowWrap: "anywhere" }, children: value })] }) }, label))), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => void onRefresh(), children: "Refresh Detection" }) })] }));

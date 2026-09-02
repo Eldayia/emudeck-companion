@@ -69,4 +69,9 @@ export interface DiagnosticsData {
   session: EmulatorSession | null;
   input_backend: string;
   last_action: ActionResult | null;
+  document_server: {
+    running: boolean;
+    port: number | null;
+    registered_documents: number;
+  };
 }

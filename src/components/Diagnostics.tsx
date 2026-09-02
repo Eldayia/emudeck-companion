@@ -10,6 +10,12 @@ export function Diagnostics({ data, onRefresh }: { data: DiagnosticsData; onRefr
     ["Game", data.session?.game ?? "—"],
     ["ROM", data.session?.rom ?? "—"],
     ["Input backend", data.input_backend],
+    [
+      "Document server",
+      data.document_server.running
+        ? `Running on localhost:${data.document_server.port}`
+        : "Stopped",
+    ],
     ["Last action", data.last_action?.message ?? "None"],
   ];
   return (

@@ -19,31 +19,41 @@ class DocumentServer:
         self._thread: threading.Thread | None = None
         self._documents: OrderedDict[str, Path] = OrderedDict()
         self._lock = threading.Lock()
+        self._lifecycle_lock = threading.Lock()
 
     def start(self) -> None:
-        if self._server is not None:
-            return
-        owner = self
+        with self._lifecycle_lock:
+            if self._server is not None:
+                return
+            owner = self
 
-        class Handler(BaseHTTPRequestHandler):
-            def do_GET(self) -> None:
-                owner._handle(self)
+            class Handler(BaseHTTPRequestHandler):
+                def do_GET(self) -> None:
+                    owner._handle(self)
 
-            def do_HEAD(self) -> None:
-                owner._handle(self, head_only=True)
+                def do_HEAD(self) -> None:
+                    owner._handle(self, head_only=True)
 
-            def log_message(self, format: str, *args: object) -> None:
-                del format, args
+                def log_message(self, format: str, *args: object) -> None:
+                    del format, args
 
-        self._server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
-        self._server.daemon_threads = True
-        self._thread = threading.Thread(target=self._server.serve_forever, daemon=True)
-        self._thread.start()
+            server = ThreadingHTTPServer(("127.0.0.1", 0), Handler)
+            server.daemon_threads = True
+            thread = threading.Thread(
+                target=server.serve_forever,
+                kwargs={"poll_interval": 0.05},
+                name="emudeck-companion-documents",
+                daemon=True,
+            )
+            self._server = server
+            self._thread = thread
+            thread.start()
 
     def stop(self) -> None:
-        server, thread = self._server, self._thread
-        self._server = None
-        self._thread = None
+        with self._lifecycle_lock:
+            server, thread = self._server, self._thread
+            self._server = None
+            self._thread = None
         if server is not None:
             server.shutdown()
             server.server_close()
@@ -51,6 +61,16 @@ class DocumentServer:
             thread.join(timeout=2)
         with self._lock:
             self._documents.clear()
+
+    def diagnostics(self) -> dict[str, int | bool | None]:
+        server = self._server
+        with self._lock:
+            registered_documents = len(self._documents)
+        return {
+            "running": server is not None,
+            "port": server.server_port if server is not None else None,
+            "registered_documents": registered_documents,
+        }
 
     def url_for(self, path: Path) -> str | None:
         if self._server is None:

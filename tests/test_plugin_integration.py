@@ -29,6 +29,8 @@ class PluginIntegrationTests(unittest.IsolatedAsyncioTestCase):
                 await plugin._main()
                 diagnostics = await plugin.get_diagnostics()
                 self.assertIsNone(diagnostics["session"])
+                self.assertTrue(diagnostics["document_server"]["running"])
+                self.assertIsInstance(diagnostics["document_server"]["port"], int)
                 self.assertEqual(len(plugin.profile_store.profiles), 14)
                 settings = await plugin.update_settings({
                     "notifications": False,
@@ -47,6 +49,7 @@ class PluginIntegrationTests(unittest.IsolatedAsyncioTestCase):
                 persisted = json.loads(Path(directory, "settings.json").read_text(encoding="utf-8"))
                 self.assertEqual(persisted, settings)
                 await plugin._unload()
+                self.assertFalse(plugin.document_server.diagnostics()["running"])
             finally:
                 sys.modules.pop("main", None)
                 if previous is None:
