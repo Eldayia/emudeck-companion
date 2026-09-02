@@ -30,6 +30,7 @@ class Session:
     discs: list[str] = field(default_factory=list)
     current_disc: int | None = None
     savestates: list[dict[str, Any]] = field(default_factory=list)
+    documents: list[dict[str, Any]] = field(default_factory=list)
 
     def as_dict(self) -> dict[str, Any]:
         return asdict(self)

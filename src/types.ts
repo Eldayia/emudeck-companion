@@ -26,6 +26,14 @@ export interface EmulatorSession {
     modified_at: number;
     size: number;
   }>;
+  documents: Array<{
+    id: string;
+    title: string;
+    path: string;
+    url: string;
+    format: string;
+    size: number;
+  }>;
 }
 
 export interface ActionResult {

@@ -19,6 +19,7 @@ if _plugin_import_root not in sys.path:
 
 from companion_action_engine import ActionEngine
 from companion_diagnostics import build_diagnostics
+from companion_documents import DocumentIndex
 from companion_emudeck import detect_emudeck
 from companion_esde import ESDEMetadataIndex
 from companion_profiles import ProfileStore
@@ -39,10 +40,12 @@ class Plugin:
         self.emudeck = detect_emudeck(Path(decky.DECKY_USER_HOME))
         self.metadata_index = self._build_metadata_index()
         self.savestate_index = self._build_savestate_index()
+        self.document_index = self._build_document_index()
         self.session_manager = SessionManager(
             self.profile_store,
             metadata_provider=self.metadata_index.lookup,
             savestate_provider=self.savestate_index.lookup,
+            document_provider=self.document_index.lookup,
         )
         self.action_engine = ActionEngine(frontend_input=True)
         self.last_action: dict[str, Any] | None = None
@@ -62,6 +65,11 @@ class Plugin:
     def _build_savestate_index(self) -> SavestateIndex:
         root = self.emudeck.get("root")
         return SavestateIndex(Path(root) if root else None)
+
+    def _build_document_index(self) -> DocumentIndex:
+        root = self.emudeck.get("root")
+        rom_root = self.emudeck.get("rom_root")
+        return DocumentIndex(Path(root) if root else None, Path(rom_root) if rom_root else None)
 
     async def _unload(self) -> None:
         await self.action_engine.release_all()
@@ -170,8 +178,10 @@ class Plugin:
             self.emudeck = detect_emudeck(Path(decky.DECKY_USER_HOME))
             self.metadata_index = self._build_metadata_index()
             self.savestate_index = self._build_savestate_index()
+            self.document_index = self._build_document_index()
             self.session_manager.metadata_provider = self.metadata_index.lookup
             self.session_manager.savestate_provider = self.savestate_index.lookup
+            self.session_manager.document_provider = self.document_index.lookup
             self.session_manager.current = None
             session = self.session_manager.refresh()
             return session.as_dict() if session else None

@@ -6,7 +6,7 @@ It does not replace EmuDeck and does not require EmuDecky.
 
 ## Current status
 
-Version 0.7 includes:
+Version 0.8 includes:
 
 - automatic process and ROM detection through `/proc`;
 - data-driven profiles for Cemu, DuckStation, PCSX2, Dolphin, RetroArch,
@@ -25,6 +25,8 @@ Version 0.7 includes:
 - controller-friendly Decky controls with no pointer-only interaction.
 - persistent per-emulator favorites (up to four actions), display preferences,
   configurable detection interval, and optional success notifications.
+- ES-DE manual discovery plus local per-game PDF, text, Markdown, and HTML
+  documents opened in Steam's controller-accessible browser.
 
 Hotkeys are delivered through Steam's controller-keyboard API after the QAM is
 closed, so no extra input package or root access is required. `ydotool`, Wayland
@@ -98,6 +100,7 @@ before being written atomically to the plugin's `settings.json`.
 - `companion_process_detection.py`: emulator process matching.
 - `companion_game_detection.py`: ROM extraction and display name fallback.
 - `companion_esde.py`: cached gamelist metadata and scraped-media lookup.
+- `companion_documents.py`: bounded per-game manual and document discovery.
 - `companion_multidisc.py`: M3U playlist discovery.
 - `companion_savestates.py`: conservative per-ROM savestate inventory.
 - `companion_action_engine.py`: capability checks, debounce, and action dispatch.

@@ -12,6 +12,7 @@ import {
   updateSettings,
 } from "./api/backend";
 import { Diagnostics } from "./components/Diagnostics";
+import { Documents } from "./components/Documents";
 import { EmulatorActions } from "./components/EmulatorActions";
 import { GameHeader } from "./components/GameHeader";
 import { Settings } from "./components/Settings";
@@ -145,6 +146,7 @@ function Content() {
             busyAction={busyAction}
             onAction={onAction}
           />
+          <Documents documents={session.documents} />
         </>
       ) : (
         <PanelSection title="EmuDeck Companion">

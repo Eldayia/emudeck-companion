@@ -18,17 +18,23 @@ class ESDEMetadataTests(unittest.TestCase):
             gamelist.parent.mkdir(parents=True)
             gamelist.write_text(
                 "<gameList><game><path>./Final Fantasy VII.m3u</path>"
-                "<name>Final Fantasy VII</name><desc>A classic.</desc></game></gameList>",
+                "<name>Final Fantasy VII</name><desc>A classic.</desc>"
+                "<manual>./downloaded_media/psx/manuals/Final Fantasy VII.pdf</manual>"
+                "</game></gameList>",
                 encoding="utf-8",
             )
             cover = esde / "downloaded_media" / "psx" / "covers" / "Final Fantasy VII.png"
             cover.parent.mkdir(parents=True)
             cover.touch()
+            manual = esde / "downloaded_media" / "psx" / "manuals" / "Final Fantasy VII.pdf"
+            manual.parent.mkdir(parents=True)
+            manual.write_bytes(b"%PDF")
 
             result = ESDEMetadataIndex(esde, rom_root).lookup(str(rom))
             self.assertEqual(result["name"], "Final Fantasy VII")
             self.assertEqual(result["desc"], "A classic.")
             self.assertEqual(result["image"], str(cover))
+            self.assertEqual(result["manual"], str(manual))
 
     def test_decodes_entities_and_cdata_without_xml_runtime(self):
         with tempfile.TemporaryDirectory() as directory:

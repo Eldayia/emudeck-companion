@@ -35,11 +35,13 @@ class SessionManager:
         process_provider: Callable[[], Iterable[ProcessInfo]] = iter_processes,
         metadata_provider: Callable[[str | None], dict[str, Any]] | None = None,
         savestate_provider: Callable[[dict[str, Any], str | None], list[dict[str, Any]]] | None = None,
+        document_provider: Callable[[str | None, dict[str, Any]], list[dict[str, Any]]] | None = None,
     ) -> None:
         self.profiles = profiles
         self.process_provider = process_provider
         self.metadata_provider = metadata_provider
         self.savestate_provider = savestate_provider
+        self.document_provider = document_provider
         self.current: Session | None = None
 
     def refresh(self) -> Session | None:
@@ -51,6 +53,10 @@ class SessionManager:
         if self.current is not None and self.current.pid == process.pid:
             if self.savestate_provider:
                 self.current.savestates = self.savestate_provider(profile, self.current.rom)
+            if self.document_provider:
+                self.current.documents = self.document_provider(
+                    self.current.rom, self.current.metadata
+                )
             return self.current
         rom = extract_rom(process.argv, profile)
         discs = playlist_discs(rom)
@@ -74,6 +80,7 @@ class SessionManager:
             discs=discs,
             current_disc=1 if discs else None,
             savestates=self.savestate_provider(profile, rom) if self.savestate_provider else [],
+            documents=self.document_provider(rom, metadata) if self.document_provider else [],
         )
         return self.current
 
