@@ -1,4 +1,4 @@
-# Scripts ES-DE optionnels — 0.21.0
+# Scripts ES-DE optionnels — 0.21.1
 
 Cette première intégration ajoute le dernier événement de lancement ou de fin
 ES-DE aux diagnostics de Companion : jeu, chemin ROM, système et heure.
@@ -48,6 +48,20 @@ vérifier leur contenu avant de l'activer. Aucun événement de navigation n'est
 nécessaire. Voir la [documentation officielle des scripts ES-DE](https://gitlab.com/es-de/emulationstation-de/-/blob/master/INSTALL-DEV.md#custom-event-scripts).
 
 ## Vérifier
+
+Depuis 0.21.1, les diagnostics du plugin lisent `CustomEventScripts` dans le
+fichier de configuration, sans le modifier. **ES-DE script activation** distingue
+le réglage enregistré (activé, désactivé, inconnu) et la réception d'un événement
+durant le démarrage actuel. La configuration sur disque peut différer du réglage
+en mémoire ; un ancien événement ne prouve pas que les scripts sont toujours
+activés. Si deux fichiers de configuration sont présents, le plugin ne devine
+pas lequel est actif. La source ou la raison du statut inconnu est affichée.
+
+Le texte statique « Not checked; enable custom event scripts » de 0.21.0 était
+une limitation d'affichage, pas une erreur d'exécution. **Aucune réinstallation
+des hooks n'est nécessaire pour 0.21.1** : leurs fichiers sont inchangés. Leur
+commande `status` autonome conserve l'ancien champ `activation` ; utiliser les
+diagnostics du plugin pour la nouvelle vérification du réglage.
 
 Lancer un jeu depuis ES-DE, ouvrir Companion, puis **Refresh Diagnostics**.
 La section **ES-DE hooks** doit afficher `event_received`, puis `game-start`

@@ -1,6 +1,6 @@
 {
   "name": "emudeck-companion",
-  "version": "0.21.0",
+  "version": "0.21.1",
   "description": "Context-aware emulator controls for EmuDeck in Decky's Quick Access Menu",
   "type": "module",
   "scripts": {

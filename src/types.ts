@@ -97,6 +97,7 @@ export interface DiagnosticsData {
     root: string | null;
     installed_hooks: number;
     activation: string;
+    activation_config?: { status: string; path: string | null; reason: string };
     same_rom?: boolean;
     last_event?: { id: string; event: string; timestamp: number; rom: string; game: string; system: string; system_name: string };
   };

@@ -147,6 +147,11 @@ function Diagnostics({ data, onRefresh, onUpdate }) {
         rows.push(["ES-DE data folder", hooks.root ?? "Not detected"]);
         if (hooks.installed_hooks > 0)
             rows.push(["ES-DE script activation", hooks.activation]);
+        if (hooks.installed_hooks > 0 && hooks.activation_config) {
+            rows.push(["ES-DE activation check", hooks.activation_config.reason]);
+            if (hooks.activation_config.path)
+                rows.push(["ES-DE settings file", hooks.activation_config.path]);
+        }
         if (hooks.last_event) {
             rows.push(["Last ES-DE event", `${hooks.last_event.event} — ${new Date(hooks.last_event.timestamp * 1000).toLocaleString()}`]);
             rows.push(["ES-DE event game", hooks.last_event.game]);

@@ -44,6 +44,8 @@ class PluginIntegrationTests(unittest.IsolatedAsyncioTestCase):
                     received = await plugin.get_diagnostics()
                     self.assertIsNone(received["session"])
                     self.assertEqual(received["esde_hooks"]["last_event"]["game"], "Test game")
+                    self.assertIn("hook event received this boot", received["esde_hooks"]["activation"])
+                    self.assertEqual(received["esde_hooks"]["activation_config"]["status"], "unknown")
                     hook_export = await plugin.export_diagnostics()
                     exported_hooks = json.loads(Path(hook_export["path"]).read_text())["esde_hooks"]
                     self.assertEqual(exported_hooks, received["esde_hooks"])

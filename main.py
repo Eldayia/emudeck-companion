@@ -24,7 +24,7 @@ from companion_document_server import DocumentServer
 from companion_documents import DocumentIndex
 from companion_emudeck import detect_emudeck
 from companion_esde import ESDEMetadataIndex
-from companion_esde_hooks import read_status as esde_hook_status
+from companion_esde_activation import diagnostic_status as esde_hook_status
 from companion_game_overrides import hidden_actions, session_payload
 from companion_hotkey_config import DuckStationHotkeyConfig
 from companion_models import ActionResult, ProcessInfo
