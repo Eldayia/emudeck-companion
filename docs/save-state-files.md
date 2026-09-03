@@ -1,4 +1,4 @@
-# Inventaire des savestates — 0.22.0
+# Inventaire des savestates — 0.22.1
 
 Pendant une session, ouvrir **Detected Save Files → Show Save Files**.
 La liste affiche cinq fichiers par page, du plus récent au plus ancien :
@@ -21,6 +21,29 @@ inchangés. Les numéros affichés dans l'inventaire ne sélectionnent aucun slo
 
 ## Lecture seule et limites
 
+Pour RetroArch, l'inventaire utilise aussi `savestate_directory` et les options
+`savestates_in_content_dir`, `sort_savestates_by_content_enable` et
+`sort_savestates_enable`, lorsqu'elles sont toutes enregistrées dans la config.
+Les includes et les overrides core/dossier/jeu déjà pris en charge sont fusionnés.
+Le tri ajoute le nom du dossier de ROM puis le nom du core (uniquement pour les
+cores reconnus). Le dossier de base reste un candidat de repli. Les chemins
+relatifs sont résolus depuis le répertoire de travail du processus, `~/` depuis
+son dossier utilisateur. Aucune arborescence n'est créée.
+
+Les chemins du profil restent des candidats complémentaires. La recherche
+configurée fonctionne même sans racine EmuDeck détectée et ne parcourt pas
+récursivement le disque. Les flags absents, cores inconnus avec tri par core,
+options CLI `-S`/`--savestate`/`--subsystem` et membres d'archives ne sont pas
+résolus par cette nouvelle logique. Les changements faits seulement en mémoire
+dans RetroArch ne sont pas suivis. Une config de stockage mal formée ne désactive
+pas les raccourcis clavier valides.
+
+Dans **Diagnostics**, consulter **Save files found**, **Save folders searched**
+et **RetroArch save path resolution**. `missing_or_not_directory` indique un
+dossier absent/non répertoire (possiblement un lien cassé), et non des slots
+vides. L'export JSON contient les mêmes informations dans `savestate_search`.
+Companion ne répare ni les liens ni les chemins de sauvegarde automatiquement.
+
 Aucune ligne ne charge, n'écrase ou ne supprime une sauvegarde. L'inventaire ne
 lit pas le contenu des states : il utilise le nom, la date et la taille des
 fichiers trouvés par les chemins/motifs du profil. Les images d'aperçu courantes
@@ -30,7 +53,7 @@ Il n'y a pas encore de miniatures.
 
 **No matching files found** signifie qu'aucun fichier n'a été reconnu dans les
 emplacements recherchés, pas que les slots sont vides. Les emplacements
-personnalisés, identifiants de jeu dans les noms, fichiers compressés et autres
+non résolus, identifiants de jeu dans les noms, fichiers compressés et autres
 conventions peuvent ne pas être reconnus. Un fichier détecté n'est pas une
 preuve de sa validité, de sa compatibilité ou d'un chargement réussi.
 

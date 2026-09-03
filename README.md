@@ -6,7 +6,7 @@ It does not replace EmuDeck and does not require EmuDecky.
 
 ## Current status
 
-Version 0.22.0 includes:
+Version 0.22.1 includes:
 
 Enable **Show Settings → Compact actions** for up to four favorites or common
 actions, with **Show All Actions** to expand the full list. The setting is off
@@ -28,6 +28,8 @@ See the [installation and removal guide](docs/esde-hooks.md).
 **Show Save Files** provides a read-only, paginated inventory of detected
 savestate files, including filename, inferred slot, date and size. See the
 [save-file inventory guide](docs/save-state-files.md).
+RetroArch discovery also uses supported disk-configured save directories and
+overrides. Diagnostics lists the searched folders and reports missing locations.
 
 - automatic process and ROM detection through `/proc`;
 - data-driven profiles for Cemu, DuckStation, PCSX2, Dolphin, RetroArch,

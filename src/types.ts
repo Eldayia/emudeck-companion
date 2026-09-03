@@ -32,6 +32,7 @@ export interface EmulatorSession {
       layers?: { level: string; path: string }[];
     };
     scope?: string;
+    savestate_search?: { status: string; paths: string[]; reason: string };
     disabled_actions?: Record<string, string>;
   };
   actions: Record<string, ActionDefinition>;
@@ -92,6 +93,11 @@ export interface GameOverride {
 }
 
 export interface DiagnosticsData {
+  savestate_search?: {
+    rom: string | null;
+    directories: Array<{ path: string; status: string }>;
+    matched_files: number;
+  } | null;
   esde_hooks?: {
     status: string;
     root: string | null;

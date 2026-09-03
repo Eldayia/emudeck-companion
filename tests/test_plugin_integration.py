@@ -33,6 +33,7 @@ class PluginIntegrationTests(unittest.IsolatedAsyncioTestCase):
                 self.assertFalse((await plugin.get_settings())["compact_actions"])
                 diagnostics = await plugin.get_diagnostics()
                 self.assertIsNone(diagnostics["session"])
+                self.assertIsNone(diagnostics["savestate_search"])
                 self.assertEqual(diagnostics["esde_hooks"]["status"], "not_installed")
                 from companion_esde_hooks import manage, record_event
                 esde_root = Path(directory) / "ES-DE"

@@ -141,6 +141,13 @@ function Diagnostics({ data, onRefresh, onUpdate }) {
         ["Last action", data.last_action?.message ?? "None"],
     ];
     const config = data.session?.hotkey_config;
+    if (data.savestate_search) {
+        rows.push(["Save files found", String(data.savestate_search.matched_files)]);
+        rows.push(["Save folders searched", data.savestate_search.directories.map((entry) => `${entry.path} — ${entry.status}`).join("\n") || "No search directory resolved"]);
+    }
+    if (config?.savestate_search) {
+        rows.push(["RetroArch save path resolution", `${config.savestate_search.status} — ${config.savestate_search.reason}`]);
+    }
     const hooks = data.esde_hooks;
     if (hooks) {
         rows.push(["ES-DE hooks", `${hooks.status} (${hooks.installed_hooks}/2 files)`]);

@@ -280,6 +280,29 @@ class RetroArchConfigTests(unittest.TestCase):
     def test_all_translated_keys_have_frontend_support(self):
         self.assertFalse(set(KEYS.values()) - SUPPORTED_KEYS)
 
+    def test_storage_include_override_priority_and_cache_refresh(self):
+        process = ProcessInfo(42, "retroarch", ("retroarch", "-L", "/cores/snes9x_libretro.so", str(self.home / "roms/game.sfc")))
+        override_dir = self.path.parent / "config/Snes9x"
+        override_dir.mkdir(parents=True)
+        game = override_dir / "game.cfg"
+        game.write_text('savestate_directory = "~/custom"', encoding="utf-8")
+        include = self.path.parent / "storage.cfg"
+        include.write_text('savestate_directory = "~/base"', encoding="utf-8")
+        result = self.resolve('#include "storage.cfg"\nrgui_config_directory = "' +
+                              str(override_dir.parent).replace("\\", "/") + '"\n' +
+                              'sort_savestates_enable = "false"\nsort_savestates_by_content_enable = "false"\n'
+                              'savestates_in_content_dir = "false"\n', process=process)
+        self.assertEqual(result["hotkey_config"]["savestate_search"]["paths"], [str(self.home / "custom")])
+        game.write_text('savestate_directory = "~/new_custom"', encoding="utf-8")
+        result = self.reader(self.profile, process)
+        self.assertEqual(result["hotkey_config"]["savestate_search"]["paths"], [str(self.home / "new_custom")])
+
+    def test_malformed_optional_storage_setting_keeps_working_hotkeys(self):
+        result = self.resolve('input_save_state = "f5"\nsavestate_directory = "unterminated')
+        self.assertEqual(result["hotkey_config"]["status"], "configured")
+        self.assertEqual(result["actions"]["save_state"]["keys"], ["f5"])
+        self.assertEqual(result["hotkey_config"]["savestate_search"]["paths"], [])
+
 
 if __name__ == "__main__":
     unittest.main()

@@ -30,16 +30,32 @@ class SavestateIndex:
 
     def __init__(self, emulation_root: Path | None):
         self.emulation_root = emulation_root
+        self.last_search: dict[str, Any] = {}
 
     def lookup(self, profile: dict[str, Any], rom: str | None) -> list[dict[str, Any]]:
-        if not self.emulation_root or not rom:
+        self.last_search = {"rom": rom, "directories": [], "matched_files": 0}
+        if not rom:
             return []
         stem = Path(rom).stem
         escaped_stem = glob.escape(stem)
         found: dict[str, dict[str, Any]] = {}
-        for relative_dir in profile.get("savestate_paths", []):
-            directory = self.emulation_root / relative_dir
-            if not directory.is_dir():
+        directories = []
+        if profile.get("hotkey_config_format") == "retroarch":
+            search = (profile.get("hotkey_config") or {}).get("savestate_search") or {}
+            for name in search.get("paths", []):
+                if isinstance(name, str) and "\0" not in name and Path(name).is_absolute():
+                    directories.append(Path(name))
+        if self.emulation_root:
+            directories.extend(self.emulation_root / name for name in profile.get("savestate_paths", []))
+        for directory in dict.fromkeys(directories):
+            entry = {"path": str(directory), "status": "searched"}
+            self.last_search["directories"].append(entry)
+            try:
+                if not directory.is_dir():
+                    entry["status"] = "missing_or_not_directory"
+                    continue
+            except OSError:
+                entry["status"] = "unavailable"
                 continue
             for template in profile.get("savestate_patterns", []):
                 pattern = str(template).replace("{stem}", escaped_stem)
@@ -60,5 +76,7 @@ class SavestateIndex:
                             "size": stat.st_size,
                         }
                 except OSError:
+                    entry["status"] = "incomplete_or_unavailable"
                     continue
+        self.last_search["matched_files"] = len(found)
         return sorted(found.values(), key=lambda state: state["modified_at"], reverse=True)

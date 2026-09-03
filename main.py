@@ -328,6 +328,7 @@ class Plugin:
         diagnostics["document_server"] = self.document_server.diagnostics()
         diagnostics["plugin_version"] = self.plugin_version
         diagnostics["action_history"] = history["action_history"]
+        diagnostics["savestate_search"] = self.savestate_index.last_search if session else None
         esde_root = self.emudeck.get("esde_root")
         diagnostics["esde_hooks"] = esde_hook_status(
             Path(esde_root) if esde_root else None, session.rom if session else None,

@@ -43,6 +43,26 @@ class SavestateIndexTests(unittest.TestCase):
         profile = {"savestate_paths": ["states"], "savestate_patterns": ["{stem}.state*"]}
         self.assertEqual(SavestateIndex(None).lookup(profile, "Game.rom"), [])
 
+    def test_configured_path_without_emudeck_root_and_search_diagnostics(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            state = root / "Game [Europe].state1"
+            state.write_bytes(b"state")
+            (root / "Other.state1").touch()
+            (root / "nested").mkdir()
+            (root / "nested/Game [Europe].state2").touch()
+            profile = {"hotkey_config_format": "retroarch", "savestate_patterns": ["{stem}.state*"],
+                       "hotkey_config": {"savestate_search": {"paths": [str(root), str(root), str(root / "absent"), "relative"]}}}
+            index = SavestateIndex(None)
+            self.assertEqual([item["path"] for item in index.lookup(profile, "Game [Europe].n64")], [str(state)])
+            self.assertEqual(index.last_search["matched_files"], 1)
+            self.assertEqual(index.last_search["directories"], [
+                {"path": str(root), "status": "searched"},
+                {"path": str(root / "absent"), "status": "missing_or_not_directory"},
+            ])
+            index.lookup(profile, None)
+            self.assertEqual(index.last_search["directories"], [])
+
     def test_excludes_preview_images_and_keeps_unknown_slot_files(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)

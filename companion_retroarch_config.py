@@ -8,6 +8,7 @@ from typing import Any
 from companion_game_detection import extract_rom
 from companion_hotkey_config import MAX_CONFIG_BYTES, process_environment
 from companion_models import ProcessInfo
+from companion_retroarch_storage import STORAGE_KEYS, storage_search
 
 
 MAX_CONFIG_FILES = 8
@@ -25,7 +26,7 @@ HOTKEY_SETTINGS = {
     "fullscreen": "input_toggle_fullscreen",
     "quit": "input_exit_emulator",
 }
-CONFIG_KEYS = set(HOTKEY_SETTINGS.values()) | {
+CONFIG_KEYS = set(HOTKEY_SETTINGS.values()) | STORAGE_KEYS | {
     "input_enable_hotkey", "input_hotkey_device_merge", "auto_overrides_enable", "rgui_config_directory",
     "network_cmd_enable", "network_cmd_port",
 }
@@ -64,6 +65,10 @@ def parse_retroarch_config(text: str) -> list[tuple[str, str]]:
             continue
         match = re.fullmatch(r'([a-z_]+)\s*=\s*(?:"([^"\n]*)"|([^\s"#]+))\s*(?:#.*)?', line)
         if not match:
+            if key in STORAGE_KEYS:
+                # Optional file discovery must not disable working input binds.
+                entries.append((key, "\0invalid"))
+                continue
             raise ValueError("Malformed hotkey setting")
         entries.append((key, match[2] if match[2] is not None else match[3]))
     return entries
@@ -193,18 +198,7 @@ class RetroArchHotkeyConfig:
             return
         if enabled not in {"true", "1"}:
             raise ValueError("Invalid auto_overrides_enable setting")
-        core_path = ""
-        args = iter(process.argv[1:])
-        for arg in args:
-            if arg == "--":
-                break
-            if arg in {"-L", "--libretro"}:
-                core_path = next(args, "")
-            elif arg.startswith("--libretro="):
-                core_path = arg.partition("=")[2]
-            elif arg.startswith("-L") and len(arg) > 2:
-                core_path = arg[2:]
-        core = CORE_NAMES.get(Path(core_path.replace("\\", "/")).stem)
+        core = self._core_name(process)
         if not core:
             report.update(status="not_resolved", reason="Core missing from launch arguments or not yet supported")
             return
@@ -241,6 +235,21 @@ class RetroArchHotkeyConfig:
             report["layers"].append({"level": level, "path": str(candidate)})
             report.update(status="applied", reason="Core, directory and game files merged in priority order")
 
+    @staticmethod
+    def _core_name(process: ProcessInfo) -> str | None:
+        core_path = ""
+        args = iter(process.argv[1:])
+        for arg in args:
+            if arg == "--":
+                break
+            if arg in {"-L", "--libretro"}:
+                core_path = next(args, "")
+            elif arg.startswith("--libretro="):
+                core_path = arg.partition("=")[2]
+            elif arg.startswith("-L") and len(arg) > 2:
+                core_path = arg[2:]
+        return CORE_NAMES.get(Path(core_path.replace("\\", "/")).stem)
+
     def __call__(self, profile: dict[str, Any], process: ProcessInfo) -> dict[str, Any]:
         if profile.get("hotkey_config_format") != "retroarch":
             return profile
@@ -248,6 +257,7 @@ class RetroArchHotkeyConfig:
         status, reason = "configured", ""
         path: Path | None = None
         visited: list[Path] = []
+        home = self.user_home
         values: dict[str, str] = {}
         overrides: dict[str, Any] = {"status": "not_resolved", "reason": "Base configuration unavailable"}
         try:
@@ -317,6 +327,7 @@ class RetroArchHotkeyConfig:
             "status": status, "path": str(path) if path else "", "paths": [str(p) for p in visited],
             "disabled_actions": disabled,
             "overrides": overrides,
+            "savestate_search": storage_search(values, process, home, self._core_name(process), self.proc_root, extract_rom(process.argv, profile)),
             "network_settings": {
                 "enabled_on_disk": values.get("network_cmd_enable", "false").casefold() in {"true", "1"},
                 "port": int(values.get("network_cmd_port", "55355"))
