@@ -6,7 +6,7 @@ It does not replace EmuDeck and does not require EmuDecky.
 
 ## Current status
 
-Version 0.21.3 includes:
+Version 0.22.0 includes:
 
 Enable **Show Settings → Compact actions** for up to four favorites or common
 actions, with **Show All Actions** to expand the full list. The setting is off
@@ -24,6 +24,10 @@ Session changes reset game-specific state and reject stale action requests. See
 Optional ES-DE launch/exit event diagnostics are available through explicitly
 installed scripts. **Enable custom event scripts** must be activated in ES-DE.
 See the [installation and removal guide](docs/esde-hooks.md).
+
+**Show Save Files** provides a read-only, paginated inventory of detected
+savestate files, including filename, inferred slot, date and size. See the
+[save-file inventory guide](docs/save-state-files.md).
 
 - automatic process and ROM detection through `/proc`;
 - data-driven profiles for Cemu, DuckStation, PCSX2, Dolphin, RetroArch,

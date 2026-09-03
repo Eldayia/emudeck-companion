@@ -46,6 +46,10 @@ class SavestateIndex:
                 try:
                     candidates = directory.glob(pattern)
                     for path in candidates:
+                        # Broad .state* patterns also match preview images. They
+                        # are not savestates and must not inflate the inventory.
+                        if path.suffix.casefold() in {".png", ".jpg", ".jpeg", ".webp", ".bmp", ".gif"}:
+                            continue
                         if not path.is_file():
                             continue
                         stat = path.stat()

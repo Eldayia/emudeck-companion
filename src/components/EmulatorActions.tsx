@@ -21,15 +21,6 @@ interface Props {
   onAction: (action: string) => Promise<void>;
 }
 
-function stateTimestamp(timestamp: number): string {
-  const date = new Date(timestamp * 1000);
-  const today = new Date();
-  const sameDay = date.toDateString() === today.toDateString();
-  return sameDay
-    ? date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-    : date.toLocaleDateString([], { month: "short", day: "numeric" });
-}
-
 export function EmulatorActions({ session, favorites, compact, busyAction, onAction }: Props) {
   const [expanded, setExpanded] = useState(false);
   useEffect(() => setExpanded(false), [compact]);
@@ -99,14 +90,6 @@ export function EmulatorActions({ session, favorites, compact, busyAction, onAct
                     {session.actions.save_state?.method === "retroarch_udp" ? "Estimated slot" : "Current slot"}: <b>{session.slot}</b>
                   </div>
                 </PanelSectionRow>
-                {session.savestates.slice(0, 5).map((state) => (
-                  <PanelSectionRow key={state.path}>
-                    <div style={{ width: "100%", display: "flex", justifyContent: "space-between", opacity: 0.68, fontSize: "12px" }}>
-                      <span>{state.slot === null ? "State" : `Slot ${state.slot}`}</span>
-                      <span>{stateTimestamp(state.modified_at)}</span>
-                    </div>
-                  </PanelSectionRow>
-                ))}
               </>
             )}
             {actions.map(actionButton)}

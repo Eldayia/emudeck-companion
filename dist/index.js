@@ -238,14 +238,6 @@ const groups = [
     { title: "RetroArch Menu Navigation", actions: ["menu_up", "menu_down", "menu_left", "menu_right", "menu_confirm", "menu_back"] },
     { title: "Session", actions: ["quit"] },
 ];
-function stateTimestamp(timestamp) {
-    const date = new Date(timestamp * 1000);
-    const today = new Date();
-    const sameDay = date.toDateString() === today.toDateString();
-    return sameDay
-        ? date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" })
-        : date.toLocaleDateString([], { month: "short", day: "numeric" });
-}
 function EmulatorActions({ session, favorites, compact, busyAction, onAction }) {
     const [expanded, setExpanded] = SP_REACT.useState(false);
     SP_REACT.useEffect(() => setExpanded(false), [compact]);
@@ -263,7 +255,7 @@ function EmulatorActions({ session, favorites, compact, busyAction, onAction }) 
                 const actions = group.actions.filter((action) => supported.has(action) && session.actions[action]);
                 if (actions.length === 0)
                     return null;
-                return (SP_JSX.jsxs(DFL.PanelSection, { title: group.title, children: [group.title === "Save States" && hasSlots && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: { width: "100%", textAlign: "center", opacity: 0.8 }, children: [session.actions.save_state?.method === "retroarch_udp" ? "Estimated slot" : "Current slot", ": ", SP_JSX.jsx("b", { children: session.slot })] }) }), session.savestates.slice(0, 5).map((state) => (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: { width: "100%", display: "flex", justifyContent: "space-between", opacity: 0.68, fontSize: "12px" }, children: [SP_JSX.jsx("span", { children: state.slot === null ? "State" : `Slot ${state.slot}` }), SP_JSX.jsx("span", { children: stateTimestamp(state.modified_at) })] }) }, state.path)))] })), actions.map(actionButton), group.title === "Save States" && hasSlots && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: busyAction !== null, onClick: () => void onAction("slot_previous"), children: "Previous Slot" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: busyAction !== null, onClick: () => void onAction("slot_next"), children: "Next Slot" }) })] }))] }, group.title));
+                return (SP_JSX.jsxs(DFL.PanelSection, { title: group.title, children: [group.title === "Save States" && hasSlots && (SP_JSX.jsx(SP_JSX.Fragment, { children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: { width: "100%", textAlign: "center", opacity: 0.8 }, children: [session.actions.save_state?.method === "retroarch_udp" ? "Estimated slot" : "Current slot", ": ", SP_JSX.jsx("b", { children: session.slot })] }) }) })), actions.map(actionButton), group.title === "Save States" && hasSlots && (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: busyAction !== null, onClick: () => void onAction("slot_previous"), children: "Previous Slot" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: busyAction !== null, onClick: () => void onAction("slot_next"), children: "Next Slot" }) })] }))] }, group.title));
             })] }));
 }
 
@@ -355,6 +347,52 @@ function GameDetails({ metadata }) {
     if (!details.rows.length && !details.descriptionPages.length)
         return null;
     return (SP_JSX.jsxs(DFL.PanelSection, { title: "Game Details", children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => { setExpanded((value) => !value); setPage(0); }, children: expanded ? "Hide Game Details" : "Show Game Details" }) }), expanded && SP_JSX.jsxs(SP_JSX.Fragment, { children: [details.rows.map(([label, value]) => (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: { width: "100%", overflowWrap: "anywhere" }, children: [SP_JSX.jsx("div", { style: { opacity: 0.55, fontSize: "12px" }, children: label }), SP_JSX.jsx("div", { children: value })] }) }, label))), details.descriptionPages.length > 0 && SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: { fontSize: "12px", lineHeight: 1.4, whiteSpace: "pre-wrap", overflowWrap: "anywhere" }, children: details.descriptionPages[current] }) }), details.descriptionPages.length > 1 && SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsxs(DFL.PanelSectionRow, { children: ["Description \u2014 ", current + 1, " / ", details.descriptionPages.length] }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: current === 0, onClick: () => setPage(current - 1), children: "Previous Page" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: current >= details.descriptionPages.length - 1, onClick: () => setPage(current + 1), children: "Next Page" }) })] }), details.descriptionTruncated && SP_JSX.jsx(DFL.PanelSectionRow, { children: "Description limited to 12,000 characters." })] }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: { opacity: 0.55, fontSize: "12px" }, children: "Source: local ES-DE metadata" }) })] })] }));
+}
+
+function stateFilePage(input, requestedPage) {
+    const files = new Map();
+    for (const value of Array.isArray(input) ? input : []) {
+        if (!value || typeof value !== "object" || typeof value.path !== "string" || !value.path.trim())
+            continue;
+        const path = value.path;
+        const file = {
+            path,
+            name: path.replace(/\\/g, "/").split("/").pop() || path,
+            slot: Number.isSafeInteger(value.slot) && value.slot >= 0 ? value.slot : null,
+            modifiedAt: typeof value.modified_at === "number" && Number.isFinite(value.modified_at)
+                && value.modified_at > 0 && value.modified_at <= 8640000000000 ? value.modified_at : null,
+            size: Number.isSafeInteger(value.size) && value.size >= 0 ? value.size : null,
+        };
+        // Keep the most recent observation if overlapping scan paths repeated a file.
+        if (!files.has(path) || (files.get(path)?.modifiedAt ?? 0) < (file.modifiedAt ?? 0))
+            files.set(path, file);
+    }
+    const sorted = [...files.values()].sort((a, b) => (b.modifiedAt ?? 0) - (a.modifiedAt ?? 0) || (a.path < b.path ? -1 : a.path > b.path ? 1 : 0));
+    const pages = Math.max(1, Math.ceil(sorted.length / 5));
+    const page = Math.min(pages - 1, Math.max(0, Number.isFinite(requestedPage) ? Math.floor(requestedPage) : 0));
+    return { items: sorted.slice(page * 5, page * 5 + 5), page, pages, total: sorted.length };
+}
+function stateFileSize(bytes) {
+    if (bytes === null || !Number.isSafeInteger(bytes) || bytes < 0)
+        return "Size unknown";
+    if (bytes < 1024)
+        return `${bytes} B`;
+    if (bytes < 1024 * 1024)
+        return `${(bytes / 1024).toFixed(1)} KiB`;
+    if (bytes < 1024 * 1024 * 1024)
+        return `${(bytes / (1024 * 1024)).toFixed(1)} MiB`;
+    return `${(bytes / (1024 * 1024 * 1024)).toFixed(1)} GiB`;
+}
+
+function SaveStateFiles({ session }) {
+    const [expanded, setExpanded] = SP_REACT.useState(false);
+    const [page, setPage] = SP_REACT.useState(0);
+    const files = SP_REACT.useMemo(() => stateFilePage(session.savestates, page), [session.savestates, page]);
+    SP_REACT.useEffect(() => { if (page !== files.page)
+        setPage(files.page); }, [page, files.page]);
+    if (!session.rom || (!files.total && !session.capabilities.some((action) => action === "save_state" || action === "load_state")))
+        return null;
+    return (SP_JSX.jsxs(DFL.PanelSection, { title: "Detected Save Files", children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => { setExpanded((value) => !value); setPage(0); }, children: expanded ? "Hide Save Files" : `Show Save Files (${files.total})` }) }), expanded && SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: { fontSize: "12px", opacity: 0.7 }, children: "Read-only file inventory. Slots are inferred from filenames, not synchronized with the emulator." }) }), !files.total && SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: { fontSize: "12px" }, children: "No matching files found in configured locations. This does not mean your slots are empty or Save/Load is unavailable." }) }), files.items.map((file) => (SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: { width: "100%", overflowWrap: "anywhere" }, children: [SP_JSX.jsx("div", { children: file.slot === null ? "Slot unknown" : `File slot ${file.slot}` }), SP_JSX.jsx("div", { style: { fontSize: "12px" }, children: file.name }), SP_JSX.jsxs("div", { style: { fontSize: "12px", opacity: 0.7 }, children: [file.modifiedAt === null ? "Date unknown" : new Date(file.modifiedAt * 1000).toLocaleString(), " \u2022 ", stateFileSize(file.size)] })] }) }, file.path))), files.total > 0 && SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsxs("div", { style: { fontSize: "12px" }, children: ["Newest first \u2014 ", files.total, " files \u2014 page ", files.page + 1, " / ", files.pages] }) }), files.pages > 1 && SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: files.page === 0, onClick: () => setPage(files.page - 1), children: "Previous Page" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", disabled: files.page === files.pages - 1, onClick: () => setPage(files.page + 1), children: "Next Page" }) })] })] })] }));
 }
 
 const keyLabels = {
@@ -1033,7 +1071,7 @@ function Content() {
     if (!loaded) {
         return SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.PanelSectionRow, { children: "Detecting active emulator\u2026" }) });
     }
-    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [session ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(GameHeader, { session: session, artwork: artwork, settings: settings }) }) }), SP_JSX.jsx(EmulatorActions, { session: session, favorites: activeFavorites, compact: settings?.compact_actions ?? false, busyAction: busyAction, onAction: onAction }, session.session_id), SP_JSX.jsx(Documents, { documents: session.documents }), SP_JSX.jsx(GameDetails, { metadata: session.metadata }, session.session_id), SP_JSX.jsx(Hotkeys, { session: session })] })) : (SP_JSX.jsxs(DFL.PanelSection, { title: "EmuDeck Companion", children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: { width: "100%", padding: "8px 0", opacity: 0.72 }, children: sessionError ? `Detection unavailable: ${sessionError}` : "No active emulation session" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => void manualRefresh(), children: "Refresh Detection" }) })] })), SP_JSX.jsxs(DFL.PanelSection, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setShowSettings((value) => !value), children: showSettings ? "Hide Settings" : "Show Settings" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setShowDiagnostics((value) => !value), children: showDiagnostics ? "Hide Diagnostics" : "Show Diagnostics" }) })] }), showSettings && settings && (SP_JSX.jsx(Settings, { settings: settings, session: session, onChange: saveSettings })), showDiagnostics && diagnostics && SP_JSX.jsx(Diagnostics, { data: diagnostics, onRefresh: manualRefresh, onUpdate: updateDiagnostics })] }));
+    return (SP_JSX.jsxs(SP_JSX.Fragment, { children: [session ? (SP_JSX.jsxs(SP_JSX.Fragment, { children: [SP_JSX.jsx(DFL.PanelSection, { children: SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(GameHeader, { session: session, artwork: artwork, settings: settings }) }) }), SP_JSX.jsx(EmulatorActions, { session: session, favorites: activeFavorites, compact: settings?.compact_actions ?? false, busyAction: busyAction, onAction: onAction }, session.session_id), SP_JSX.jsx(Documents, { documents: session.documents }), SP_JSX.jsx(SaveStateFiles, { session: session }, session.session_id), SP_JSX.jsx(GameDetails, { metadata: session.metadata }, session.session_id), SP_JSX.jsx(Hotkeys, { session: session })] })) : (SP_JSX.jsxs(DFL.PanelSection, { title: "EmuDeck Companion", children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx("div", { style: { width: "100%", padding: "8px 0", opacity: 0.72 }, children: sessionError ? `Detection unavailable: ${sessionError}` : "No active emulation session" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => void manualRefresh(), children: "Refresh Detection" }) })] })), SP_JSX.jsxs(DFL.PanelSection, { children: [SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setShowSettings((value) => !value), children: showSettings ? "Hide Settings" : "Show Settings" }) }), SP_JSX.jsx(DFL.PanelSectionRow, { children: SP_JSX.jsx(DFL.ButtonItem, { layout: "below", onClick: () => setShowDiagnostics((value) => !value), children: showDiagnostics ? "Hide Diagnostics" : "Show Diagnostics" }) })] }), showSettings && settings && (SP_JSX.jsx(Settings, { settings: settings, session: session, onChange: saveSettings })), showDiagnostics && diagnostics && SP_JSX.jsx(Diagnostics, { data: diagnostics, onRefresh: manualRefresh, onUpdate: updateDiagnostics })] }));
 }
 var index = definePlugin(() => ({
     name: "EmuDeck Companion",

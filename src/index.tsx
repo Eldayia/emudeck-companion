@@ -17,6 +17,7 @@ import { Documents } from "./components/Documents";
 import { EmulatorActions } from "./components/EmulatorActions";
 import { GameHeader } from "./components/GameHeader";
 import { GameDetails } from "./components/GameDetails";
+import { SaveStateFiles } from "./components/SaveStateFiles";
 import { Hotkeys } from "./components/Hotkeys";
 import { Settings } from "./components/Settings";
 import { pressHotkeys } from "./hotkey";
@@ -191,6 +192,7 @@ function Content() {
             onAction={onAction}
           />
           <Documents documents={session.documents} />
+          <SaveStateFiles key={session.session_id} session={session} />
           <GameDetails
             key={session.session_id}
             metadata={session.metadata}

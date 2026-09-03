@@ -43,6 +43,16 @@ class SavestateIndexTests(unittest.TestCase):
         profile = {"savestate_paths": ["states"], "savestate_patterns": ["{stem}.state*"]}
         self.assertEqual(SavestateIndex(None).lookup(profile, "Game.rom"), [])
 
+    def test_excludes_preview_images_and_keeps_unknown_slot_files(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            for name in ("Game.state1", "Game.state.auto", "Game.state1.png", "Game.state2.JPG", "Game.state1.webp"):
+                (root / name).write_bytes(b"data")
+            profile = {"savestate_paths": ["."], "savestate_patterns": ["{stem}.state*"]}
+            result = SavestateIndex(root).lookup(profile, "Game.rom")
+            self.assertEqual({Path(item["path"]).name for item in result}, {"Game.state1", "Game.state.auto"})
+            self.assertEqual(next(item for item in result if item["path"].endswith(".auto"))["slot"], None)
+
     def test_finds_melonds_slots(self):
         with tempfile.TemporaryDirectory() as directory:
             root = Path(directory)
