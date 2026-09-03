@@ -195,7 +195,7 @@ class PluginIntegrationTests(unittest.IsolatedAsyncioTestCase):
                 (esde_root / "es_settings.xml").write_text('<bool name="CustomEventScripts" value="true"/>')
                 original_import = builtins.__import__
                 def without_xml(name, *args, **kwargs):
-                    if name.startswith("xml"):
+                    if name.startswith(("xml", "pyexpat", "defusedxml", "lxml")):
                         raise ModuleNotFoundError("No module named 'xml.etree'")
                     return original_import(name, *args, **kwargs)
                 with patch("builtins.__import__", without_xml):
@@ -206,7 +206,7 @@ class PluginIntegrationTests(unittest.IsolatedAsyncioTestCase):
                     self.assertEqual(len(plugin.profile_store.profiles), 14)
                     self.assertIsNone(await plugin.get_current_session())
                     diagnostics = await plugin.get_diagnostics()
-                    self.assertIn("XML parser unavailable", diagnostics["esde_hooks"]["activation_config"]["reason"])
+                    self.assertEqual(diagnostics["esde_hooks"]["activation_config"]["status"], "enabled_on_disk")
                     await plugin._unload()
             finally:
                 sys.path = original_path

@@ -874,7 +874,9 @@ function createSessionRead(timeoutMs = 8000) {
         pending = true;
         return new Promise((resolve, reject) => {
             const timer = setTimeout(() => reject(new Error("Emulator detection did not respond within 8 seconds. Restart Decky and check plugin_loader logs.")), timeoutMs);
-            Promise.resolve().then(request).then((value) => { pending = false; clearTimeout(timer); resolve(value); }, (error) => { pending = false; clearTimeout(timer); reject(error); });
+            // Promise callbacks receive a value, even undefined. Do not forward it
+            // to Decky's variadic callable: Python expects zero RPC arguments here.
+            Promise.resolve().then(() => request()).then((value) => { pending = false; clearTimeout(timer); resolve(value); }, (error) => { pending = false; clearTimeout(timer); reject(error); });
         });
     };
 }

@@ -1,4 +1,4 @@
-# Blocage sur « Detecting active emulator… » — 0.21.2
+# Blocage sur « Detecting active emulator… » — 0.21.3
 
 Cet écran attend le premier résultat de `get_current_session`. Avant 0.21.2,
 une réponse jamais reçue laissait le chargement affiché indéfiniment, tandis
@@ -13,12 +13,18 @@ si elle reste bloquée, aucun nouveau sondage ne s'empile. Une réponse tardive
 n'est pas appliquée ; si la requête finit, un prochain sondage peut récupérer
 la session. Le délai concerne la lecture de session, pas toutes les RPC.
 
-La vérification XML du réglage ES-DE est désormais optionnelle au chargement.
-Un module XML ou une dépendance native absent du Python embarqué donne un
-statut de vérification inconnu, sans empêcher l'import du plugin. Le journal
+La 0.21.2 rendait la vérification XML du réglage ES-DE optionnelle au chargement.
+La 0.21.3 utilise un lecteur limité au format des paramètres ES-DE, sans module
+XML ni dépendance native, y compris pour afficher le réglage enregistré. Le journal
 du Deck a confirmé `ModuleNotFoundError: No module named 'xml.etree'` pendant
 l'import de la version 0.21.1. Ce cas est désormais simulé dans les tests.
 Les copies de scripts ES-DE sont inchangées, sans réinstallation nécessaire.
+
+La 0.21.3 corrige aussi `Plugin.get_current_session() takes 1 positional argument
+but 2 were given`, introduit en 0.21.2 : une callback de promesse transmettait
+implicitement `undefined` à l'appel Decky sans argument. Les sondages et le
+rafraîchissement manuel invoquent désormais explicitement la RPC avec zéro
+argument. Un test reproduit l'erreur avant correction et vérifie les deux routes.
 
 ## Collecter les logs
 

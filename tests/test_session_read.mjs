@@ -16,6 +16,16 @@ await test("Successful and empty session reads release the gate", async () => {
   assert.deepEqual(await read(async () => ({ session_id: "abc" })), { session_id: "abc" });
   assert.equal(await read(async () => null), null);
 });
+await test("Decky zero-argument RPC receives no promise fulfillment argument", async () => {
+  const read = createSessionRead();
+  for (const route of ["get_current_session", "refresh_detection"]) {
+    const rpc = async (...args) => {
+      assert.deepEqual(args, [], `${route} must not receive undefined/null as an extra argument`);
+      return null;
+    };
+    assert.equal(await read(rpc), null);
+  }
+});
 await test("Synchronous and asynchronous errors surface and release the gate", async () => {
   const read = createSessionRead();
   await assert.rejects(read(() => { throw Error("sync"); }), /sync/);

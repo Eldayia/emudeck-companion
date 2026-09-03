@@ -1,4 +1,4 @@
-# Scripts ES-DE optionnels — 0.21.1
+# Scripts ES-DE optionnels — 0.21.3
 
 Cette première intégration ajoute le dernier événement de lancement ou de fin
 ES-DE aux diagnostics de Companion : jeu, chemin ROM, système et heure.
@@ -63,8 +63,14 @@ des hooks n'est nécessaire pour 0.21.1** : leurs fichiers sont inchangés. Leur
 commande `status` autonome conserve l'ancien champ `activation` ; utiliser les
 diagnostics du plugin pour la nouvelle vérification du réglage.
 
-Depuis 0.21.2, l'absence de lecteur XML dans Python embarqué par Decky donne
-un statut de vérification inconnu sans bloquer le chargement du plugin.
+La 0.21.2 évitait le blocage en indiquant un statut inconnu sans lecteur XML.
+Depuis 0.21.3, la lecture du réglage ne dépend plus de `xml.etree`, de `pyexpat`
+ni d'un paquet supplémentaire. Les scripts installés restent inchangés.
+Le lecteur reconnaît le format ES-DE à paramètres plats (avec ou sans enveloppe
+`config`), les commentaires, guillemets simples/doubles et balises vides.
+Les structures complexes, DTD, CDATA, entités dans la valeur recherchée,
+attributs dupliqués ou réglages ambigus restent inconnus, sans exécution ni
+modification du fichier. Ce n'est pas un lecteur XML généraliste.
 Voir le [guide du chargement bloqué](debug-loading.md) pour les logs utiles.
 
 Lancer un jeu depuis ES-DE, ouvrir Companion, puis **Refresh Diagnostics**.

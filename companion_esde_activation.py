@@ -7,16 +7,74 @@ from pathlib import Path
 from companion_esde_hooks import checked_directory, read_status, regular_file
 
 
+_NAME = r"[A-Za-z_][A-Za-z0-9_.-]*"
+_ATTRIBUTE = re.compile(rf'''\s+({_NAME})\s*=\s*(?:"([^"<]*)"|'([^'<]*)')''')
+_OPEN = re.compile(rf'''<({_NAME})((?:\s+{_NAME}\s*=\s*(?:"[^"<]*"|'[^'<]*'))*)\s*(/?)>''')
+_CLOSE = re.compile(rf"</({_NAME})\s*>")
+
+
+def activation_values(text: str) -> list[str | None]:
+    """Read ES-DE's flat attribute-based settings, not general-purpose XML.
+
+    Accept fragments or one config wrapper, comments, and empty paired tags.
+    No XML imports, entity expansion, DTDs, CDATA or nested setting records.
+    Validate the entire supported structure before trusting the target value.
+    """
+    if re.search(r"[\x00-\x08\x0b\x0c\x0e-\x1f]", text):
+        raise ValueError("Invalid control character")
+    text = re.sub(r'^\s*<\?xml\s[^?]*\?>', '', text, count=1)
+    values = []
+    stack: list[str] = []
+    wrapper_seen = False
+    record_seen = False
+    position = 0
+    while position < len(text):
+        if text[position].isspace():
+            position += 1
+            continue
+        if text.startswith("<!--", position):
+            end = text.find("-->", position + 4)
+            if end < 0 or "--" in text[position + 4:end]:
+                raise ValueError("Invalid comment")
+            position = end + 3
+            continue
+        closing = _CLOSE.match(text, position)
+        if closing:
+            if not stack or stack.pop() != closing[1]:
+                raise ValueError("Unbalanced settings tags")
+            position = closing.end()
+            continue
+        opening = _OPEN.match(text, position)
+        if not opening:
+            raise ValueError("Unsupported settings markup")
+        tag, raw_attributes, self_closing = opening.groups()
+        attributes = {}
+        for attribute in _ATTRIBUTE.finditer(raw_attributes):
+            name, double, single = attribute.groups()
+            if name in attributes:
+                raise ValueError("Duplicate attribute")
+            attributes[name] = double if double is not None else single
+        if tag == "config":
+            if stack or wrapper_seen or record_seen or attributes:
+                raise ValueError("Unexpected config wrapper")
+            wrapper_seen = True
+        else:
+            if stack not in ([], ["config"]) or (wrapper_seen and not stack):
+                raise ValueError("Nested or misplaced setting")
+            record_seen = True
+            if tag == "bool" and attributes.get("name") == "CustomEventScripts":
+                values.append(attributes.get("value"))
+        if not self_closing:
+            stack.append(tag)
+        position = opening.end()
+    if stack:
+        raise ValueError("Unclosed settings tags")
+    return values
+
+
 def read_activation(root: Path | None) -> dict:
     result = {"status": "unknown", "path": None, "reason": "ES-DE data folder not detected"}
     if root is None:
-        return result
-    # Optional diagnostics must not prevent the plugin from importing when
-    # Decky's embedded Python lacks an XML module or its native dependency.
-    try:
-        from xml.etree import ElementTree as ET
-    except ImportError:
-        result["reason"] = "XML parser unavailable in the plugin Python runtime"
         return result
     try:
         checked_directory(root)
@@ -35,22 +93,14 @@ def read_activation(root: Path | None) -> dict:
         path, raw = files[0]
         result["path"] = str(path)
         text = raw.decode("utf-8-sig")
-        if "<!DOCTYPE" in text.upper() or "<!ENTITY" in text.upper():
-            raise ValueError("XML declarations are not supported")
-        # ES-DE also writes XML fragments with multiple top-level settings.
-        text = re.sub(r'^\s*<\?xml\s[^?]*\?>', '', text, count=1)
-        document = ET.fromstring(f"<settings_fragment>{text}</settings_fragment>")
-        nodes = document.findall("bool") + document.findall("config/bool")
-        values = [node.get("value") for node in nodes if node.get("name") == "CustomEventScripts"]
+        values = activation_values(text)
         if len(values) != 1 or values[0] not in ("true", "false"):
             result["reason"] = "CustomEventScripts missing, duplicated or invalid"
             return result
         result.update(status="enabled_on_disk" if values[0] == "true" else "disabled_on_disk",
                       reason="Saved configuration only; runtime setting may differ")
-    except ImportError:
-        result["reason"] = "XML parser unavailable in the plugin Python runtime"
-    except (OSError, ValueError, ET.ParseError, RecursionError):
-        result["reason"] = "Settings file unreadable or invalid"
+    except (OSError, ValueError, RecursionError):
+        result["reason"] = "Settings file unreadable, invalid or unsupported"
     return result
 
 

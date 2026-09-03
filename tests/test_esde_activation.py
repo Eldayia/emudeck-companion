@@ -95,21 +95,59 @@ class ESDEActivationTests(unittest.TestCase):
         self.assertIn("Enabled in saved", result["activation"])
         self.assertIn("no valid hook event", result["activation"])
 
-    def test_module_import_and_status_survive_missing_xml_runtime(self):
+    def test_module_import_and_enabled_status_without_any_xml_runtime(self):
+        self.write('<bool name="CustomEventScripts" value="true"/>')
         original = builtins.__import__
         def without_xml(name, *args, **kwargs):
-            if name.startswith("xml"):
+            if name.startswith(("xml", "pyexpat", "defusedxml", "lxml")):
                 raise ModuleNotFoundError("XML unavailable")
             return original(name, *args, **kwargs)
         with patch("builtins.__import__", without_xml):
             module = runpy.run_path(str(Path(__file__).parents[1] / "companion_esde_activation.py"))
             result = module["diagnostic_status"](self.root)
-        self.assertEqual(result["activation_config"]["status"], "unknown")
-        self.assertIn("XML parser unavailable", result["activation_config"]["reason"])
+        self.assertEqual(result["activation_config"]["status"], "enabled_on_disk")
+        self.assertIn("Enabled in saved", result["activation"])
 
-    def test_native_parser_dependency_failure_is_optional(self):
-        self.write('<bool name="CustomEventScripts" value="true"/>')
-        with patch("xml.etree.ElementTree.fromstring", side_effect=ImportError("pyexpat")):
-            result = read_activation(self.root)
-        self.assertEqual(result["status"], "unknown")
-        self.assertIn("XML parser unavailable", result["reason"])
+    def test_accepts_quotes_whitespace_empty_pairs_and_unrelated_escaped_values(self):
+        self.write('''<?xml version="1.0" encoding="UTF-8"?>
+<config>
+  <string name="Password" value="secret &amp; &quot;value&quot; >"/>
+  <int name="Count" value="2" />
+  <bool value = 'true'\n name = 'CustomEventScripts' > </bool>
+</config>''')
+        result = read_activation(self.root)
+        self.assertEqual(result["status"], "enabled_on_disk")
+        self.assertNotIn("secret", str(result))
+
+    def test_does_not_match_comments_cdata_attributes_or_nested_records(self):
+        setting = '<bool name="CustomEventScripts" value="true"/>'
+        for content in (
+            f'<!-- {setting} -->', f'<![CDATA[{setting}]]>',
+            '<string name="Other" value="&lt;bool name=&quot;CustomEventScripts&quot; value=&quot;true&quot;/&gt;"/>',
+            f'<config><other>{setting}</other></config>',
+            f'<config>{setting}</config>{setting}',
+            f'<other>{setting}</other>',
+        ):
+            with self.subTest(content=content):
+                self.write(content)
+                self.assertEqual(read_activation(self.root)["status"], "unknown")
+
+    def test_does_not_accept_valid_flag_followed_by_malformed_content(self):
+        setting = '<bool name="CustomEventScripts" value="true"/>'
+        for suffix in ('<broken', '<config>', '</other>', '<?other?>', 'text', '\x00', '<!-- unfinished'):
+            self.write(setting + suffix)
+            self.assertEqual(read_activation(self.root)["status"], "unknown")
+
+    def test_rejects_duplicate_attributes_bad_nesting_and_entity_values(self):
+        for content in (
+            '<bool name="CustomEventScripts" value="true" value="false"/>',
+            '<bool name="Other" name="CustomEventScripts" value="true"/>',
+            '<bool name="CustomEventScripts" value="true"></string>',
+            '<bool name="CustomEventScripts" value="true">',
+            '<config><config><bool name="CustomEventScripts" value="true"/></config></config>',
+            '<bool name="CustomEventScripts" value="&#116;rue"/>',
+            '<config/><bool name="CustomEventScripts" value="true"/>',
+        ):
+            with self.subTest(content=content):
+                self.write(content)
+                self.assertEqual(read_activation(self.root)["status"], "unknown")
