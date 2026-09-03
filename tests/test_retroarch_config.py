@@ -292,16 +292,42 @@ class RetroArchConfigTests(unittest.TestCase):
                               str(override_dir.parent).replace("\\", "/") + '"\n' +
                               'sort_savestates_enable = "false"\nsort_savestates_by_content_enable = "false"\n'
                               'savestates_in_content_dir = "false"\n', process=process)
-        self.assertEqual(result["hotkey_config"]["savestate_search"]["paths"], [str(self.home / "custom")])
+        self.assertEqual(result["hotkey_config"]["savestate_search"]["paths"], [str(self.home / "custom"), str(self.path.parent / "states")])
         game.write_text('savestate_directory = "~/new_custom"', encoding="utf-8")
         result = self.reader(self.profile, process)
-        self.assertEqual(result["hotkey_config"]["savestate_search"]["paths"], [str(self.home / "new_custom")])
+        self.assertEqual(result["hotkey_config"]["savestate_search"]["paths"], [str(self.home / "new_custom"), str(self.path.parent / "states")])
 
     def test_malformed_optional_storage_setting_keeps_working_hotkeys(self):
         result = self.resolve('input_save_state = "f5"\nsavestate_directory = "unterminated')
         self.assertEqual(result["hotkey_config"]["status"], "configured")
         self.assertEqual(result["actions"]["save_state"]["keys"], ["f5"])
-        self.assertEqual(result["hotkey_config"]["savestate_search"]["paths"], [])
+        self.assertEqual(result["hotkey_config"]["savestate_search"]["paths"], [str(self.path.parent / "states")])
+
+    def test_flatpak_local_states_when_recorded_emudeck_folder_is_missing(self):
+        from companion_savestates import SavestateIndex
+
+        self.path = self.home / ".var/app/org.libretro.RetroArch/config/retroarch/retroarch.cfg"
+        self.path.parent.mkdir(parents=True)
+        states = self.path.parent / "states"
+        states.mkdir()
+        stem = "1080 TenEighty Snowboarding (Europe) (En,Ja,Fr,De)"
+        for name in (stem + ".state", stem + ".state.auto", stem + ".state.png", stem + ".state.auto.png", "Other.state"):
+            (states / name).write_bytes(b"untouched")
+        rom = str(self.home / "Emulation/roms/n64" / (stem + ".n64"))
+        process = ProcessInfo(42, "retroarch", ("retroarch", "-c", str(self.path), rom))
+        config = ('savestate_directory = "~/Emulation/saves/retroarch/states"\n'
+                  'savestates_in_content_dir = "false"\nsort_savestates_enable = "false"\n'
+                  'sort_savestates_by_content_enable = "false"\ninput_save_state = "f5"\n')
+        resolved = self.resolve(config, process=process)
+        index = SavestateIndex(self.home / "Emulation")
+        found = index.lookup(resolved, rom)
+        self.assertEqual({Path(item["path"]).name for item in found}, {stem + ".state", stem + ".state.auto"})
+        self.assertEqual(index.last_search["matched_files"], 2)
+        self.assertEqual(len(index.last_search["directories"]), 2)
+        self.assertEqual(index.last_search["directories"][0]["status"], "missing_or_not_directory")
+        self.assertEqual(self.path.read_text(encoding="utf-8"), config)
+        self.assertTrue(all(path.read_bytes() == b"untouched" for path in states.iterdir()))
+        self.assertEqual(resolved["actions"]["save_state"]["keys"], ["f5"])
 
 
 if __name__ == "__main__":

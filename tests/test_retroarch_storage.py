@@ -57,3 +57,22 @@ class RetroArchStorageTests(unittest.TestCase):
         cwd = self.home / "proc/42/cwd"
         cwd.mkdir(parents=True)
         self.assertEqual(self.resolve()["paths"], [str(cwd / "states")])
+
+    def test_local_candidate_is_scoped_to_selected_standard_config_folder(self):
+        for relative in (".config/retroarch/retroarch.cfg", ".var/app/org.libretro.RetroArch/config/retroarch/retroarch.cfg"):
+            config = self.home / relative
+            report = storage_search({}, self.process, self.home, None, self.home / "proc", self.rom, config)
+            self.assertEqual(report["status"], "local_candidate")
+            self.assertEqual(report["paths"], [str(config.parent / "states")])
+        for relative in ("retroarch.cfg", "custom/game.cfg"):
+            report = storage_search({}, self.process, self.home, None, self.home / "proc", self.rom, self.home / relative)
+            self.assertEqual(report["paths"], [])
+
+    def test_local_candidate_deduplicates_and_does_not_override_cli_guard(self):
+        config = self.home / ".config/retroarch/retroarch.cfg"
+        self.values["savestate_directory"] = str(config.parent / "states")
+        report = storage_search(self.values, self.process, self.home, None, self.home / "proc", self.rom, config)
+        self.assertEqual(report["paths"], [str(config.parent / "states")])
+        self.process = ProcessInfo(42, "retroarch", ("retroarch", "-S", "custom", self.rom))
+        report = storage_search(self.values, self.process, self.home, None, self.home / "proc", self.rom, config)
+        self.assertEqual(report["paths"], [])

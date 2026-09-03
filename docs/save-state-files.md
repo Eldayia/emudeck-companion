@@ -1,4 +1,4 @@
-# Inventaire des savestates — 0.22.1
+# Inventaire des savestates — 0.22.2
 
 Pendant une session, ouvrir **Detected Save Files → Show Save Files**.
 La liste affiche cinq fichiers par page, du plus récent au plus ancien :
@@ -31,6 +31,16 @@ relatifs sont résolus depuis le répertoire de travail du processus, `~/` depui
 son dossier utilisateur. Aucune arborescence n'est créée.
 
 Les chemins du profil restent des candidats complémentaires. La recherche
+ajoute aussi le dossier `states` voisin du fichier `retroarch/retroarch.cfg`
+sélectionné, notamment `~/.var/app/org.libretro.RetroArch/config/retroarch/states`
+pour Flatpak. Ce candidat reste disponible si les options de tri sont absentes
+ou le dossier enregistré est inexistant. Il n'est pas présenté comme le chemin
+de sortie confirmé de la session : il peut contenir des sauvegardes antérieures.
+Seul le dossier de configuration sélectionné est utilisé, sans parcourir les
+autres installations de RetroArch. Les `.state` et `.state.auto` correspondant
+au nom exact de la ROM sont inclus ; leurs aperçus `.png` restent exclus.
+
+La recherche
 configurée fonctionne même sans racine EmuDeck détectée et ne parcourt pas
 récursivement le disque. Les flags absents, cores inconnus avec tri par core,
 options CLI `-S`/`--savestate`/`--subsystem` et membres d'archives ne sont pas

@@ -327,7 +327,7 @@ class RetroArchHotkeyConfig:
             "status": status, "path": str(path) if path else "", "paths": [str(p) for p in visited],
             "disabled_actions": disabled,
             "overrides": overrides,
-            "savestate_search": storage_search(values, process, home, self._core_name(process), self.proc_root, extract_rom(process.argv, profile)),
+            "savestate_search": storage_search(values, process, home, self._core_name(process), self.proc_root, extract_rom(process.argv, profile), path),
             "network_settings": {
                 "enabled_on_disk": values.get("network_cmd_enable", "false").casefold() in {"true", "1"},
                 "port": int(values.get("network_cmd_port", "55355"))

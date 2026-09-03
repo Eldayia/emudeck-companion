@@ -6,7 +6,7 @@ It does not replace EmuDeck and does not require EmuDecky.
 
 ## Current status
 
-Version 0.22.1 includes:
+Version 0.22.2 includes:
 
 Enable **Show Settings → Compact actions** for up to four favorites or common
 actions, with **Show All Actions** to expand the full list. The setting is off
