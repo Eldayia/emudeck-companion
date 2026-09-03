@@ -1,4 +1,6 @@
 import tempfile
+import builtins
+import runpy
 import unittest
 from pathlib import Path
 from unittest.mock import patch
@@ -92,3 +94,22 @@ class ESDEActivationTests(unittest.TestCase):
             result = diagnostic_status(self.root)
         self.assertIn("Enabled in saved", result["activation"])
         self.assertIn("no valid hook event", result["activation"])
+
+    def test_module_import_and_status_survive_missing_xml_runtime(self):
+        original = builtins.__import__
+        def without_xml(name, *args, **kwargs):
+            if name.startswith("xml"):
+                raise ModuleNotFoundError("XML unavailable")
+            return original(name, *args, **kwargs)
+        with patch("builtins.__import__", without_xml):
+            module = runpy.run_path(str(Path(__file__).parents[1] / "companion_esde_activation.py"))
+            result = module["diagnostic_status"](self.root)
+        self.assertEqual(result["activation_config"]["status"], "unknown")
+        self.assertIn("XML parser unavailable", result["activation_config"]["reason"])
+
+    def test_native_parser_dependency_failure_is_optional(self):
+        self.write('<bool name="CustomEventScripts" value="true"/>')
+        with patch("xml.etree.ElementTree.fromstring", side_effect=ImportError("pyexpat")):
+            result = read_activation(self.root)
+        self.assertEqual(result["status"], "unknown")
+        self.assertIn("XML parser unavailable", result["reason"])

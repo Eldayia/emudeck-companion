@@ -1,4 +1,5 @@
 import importlib
+import builtins
 import json
 import sys
 import tempfile
@@ -189,12 +190,24 @@ class PluginIntegrationTests(unittest.IsolatedAsyncioTestCase):
                 assert spec is not None and spec.loader is not None
                 module = importlib.util.module_from_spec(spec)
                 sys.modules["main"] = module
-                spec.loader.exec_module(module)
-                self.assertEqual(Path(sys.path[0]), ROOT)
-                plugin = module.Plugin()
-                await plugin._main()
-                self.assertEqual(len(plugin.profile_store.profiles), 14)
-                await plugin._unload()
+                esde_root = Path(directory) / "ES-DE"
+                esde_root.mkdir()
+                (esde_root / "es_settings.xml").write_text('<bool name="CustomEventScripts" value="true"/>')
+                original_import = builtins.__import__
+                def without_xml(name, *args, **kwargs):
+                    if name.startswith("xml"):
+                        raise ModuleNotFoundError("No module named 'xml.etree'")
+                    return original_import(name, *args, **kwargs)
+                with patch("builtins.__import__", without_xml):
+                    spec.loader.exec_module(module)
+                    self.assertEqual(Path(sys.path[0]), ROOT)
+                    plugin = module.Plugin()
+                    await plugin._main()
+                    self.assertEqual(len(plugin.profile_store.profiles), 14)
+                    self.assertIsNone(await plugin.get_current_session())
+                    diagnostics = await plugin.get_diagnostics()
+                    self.assertIn("XML parser unavailable", diagnostics["esde_hooks"]["activation_config"]["reason"])
+                    await plugin._unload()
             finally:
                 sys.path = original_path
                 sys.modules.pop("main", None)

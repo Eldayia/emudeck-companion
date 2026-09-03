@@ -1,6 +1,6 @@
 import { ButtonItem, Navigation, PanelSection, PanelSectionRow, staticClasses } from "@decky/ui";
 import { definePlugin, toaster } from "@decky/api";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { FaGamepad } from "react-icons/fa";
 import {
   executeAction,
@@ -21,11 +21,19 @@ import { Hotkeys } from "./components/Hotkeys";
 import { Settings } from "./components/Settings";
 import { pressHotkeys } from "./hotkey";
 import { deliverKeyboard, inCurrentSession } from "./actionDelivery";
+import { createSessionRead } from "./sessionRead";
 import type { CompanionSettings, DiagnosticsData, EmulatorSession } from "./types";
 
 function Content() {
   const [session, setSession] = useState<EmulatorSession | null>(null);
   const [loaded, setLoaded] = useState(false);
+  const [sessionError, setSessionError] = useState<string | null>(null);
+  const [readSession] = useState(() => createSessionRead<EmulatorSession | null>());
+  const mounted = useRef(true);
+  useEffect(() => {
+    mounted.current = true;
+    return () => { mounted.current = false; };
+  }, []);
   const [busyAction, setBusyAction] = useState<string | null>(null);
   const [showDiagnostics, setShowDiagnostics] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -33,15 +41,27 @@ function Content() {
   const [artwork, setArtwork] = useState<string | null>(null);
   const [settings, setSettings] = useState<CompanionSettings | null>(null);
 
-  const updateSession = useCallback(async () => {
+  const updateSession = useCallback(async (refresh = false) => {
+    const request = readSession(refresh ? refreshDetection : getCurrentSession);
+    if (!request) {
+      if (refresh) toaster.toast({ title: "Detection still pending", body: "The previous backend request has not finished. Restart Decky and check plugin_loader logs." });
+      return false;
+    }
     try {
-      setSession(await getCurrentSession());
+      const next = await request;
+      if (mounted.current) { setSession(next); setSessionError(null); }
+      return true;
     } catch (error) {
       console.error("EmuDeck Companion session refresh failed", error);
+      if (mounted.current) {
+        setSession(null);
+        setSessionError(String(error).slice(0, 500));
+      }
+      return false;
     } finally {
-      setLoaded(true);
+      if (mounted.current) setLoaded(true);
     }
-  }, []);
+  }, [readSession]);
 
   const updateDiagnostics = useCallback(async () => {
     try {
@@ -140,9 +160,8 @@ function Content() {
   }, []);
 
   const manualRefresh = useCallback(async () => {
-    setSession(await refreshDetection());
-    if (showDiagnostics) await updateDiagnostics();
-  }, [showDiagnostics, updateDiagnostics]);
+    if (await updateSession(true) && showDiagnostics) await updateDiagnostics();
+  }, [updateSession, showDiagnostics, updateDiagnostics]);
 
   const activeFavorites = session && settings
     ? settings.game_overrides[session.game_key ?? ""]?.favorites
@@ -182,7 +201,7 @@ function Content() {
         <PanelSection title="EmuDeck Companion">
           <PanelSectionRow>
             <div style={{ width: "100%", padding: "8px 0", opacity: 0.72 }}>
-              No active emulation session
+              {sessionError ? `Detection unavailable: ${sessionError}` : "No active emulation session"}
             </div>
           </PanelSectionRow>
           <PanelSectionRow>

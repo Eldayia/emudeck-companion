@@ -63,6 +63,10 @@ des hooks n'est nécessaire pour 0.21.1** : leurs fichiers sont inchangés. Leur
 commande `status` autonome conserve l'ancien champ `activation` ; utiliser les
 diagnostics du plugin pour la nouvelle vérification du réglage.
 
+Depuis 0.21.2, l'absence de lecteur XML dans Python embarqué par Decky donne
+un statut de vérification inconnu sans bloquer le chargement du plugin.
+Voir le [guide du chargement bloqué](debug-loading.md) pour les logs utiles.
+
 Lancer un jeu depuis ES-DE, ouvrir Companion, puis **Refresh Diagnostics**.
 La section **ES-DE hooks** doit afficher `event_received`, puis `game-start`
 et le bon jeu dans **Last ES-DE event**. Quitter normalement le jeu, revenir

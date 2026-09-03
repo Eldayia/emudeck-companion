@@ -3,7 +3,6 @@ from __future__ import annotations
 
 import re
 from pathlib import Path
-from xml.etree import ElementTree as ET
 
 from companion_esde_hooks import checked_directory, read_status, regular_file
 
@@ -11,6 +10,13 @@ from companion_esde_hooks import checked_directory, read_status, regular_file
 def read_activation(root: Path | None) -> dict:
     result = {"status": "unknown", "path": None, "reason": "ES-DE data folder not detected"}
     if root is None:
+        return result
+    # Optional diagnostics must not prevent the plugin from importing when
+    # Decky's embedded Python lacks an XML module or its native dependency.
+    try:
+        from xml.etree import ElementTree as ET
+    except ImportError:
+        result["reason"] = "XML parser unavailable in the plugin Python runtime"
         return result
     try:
         checked_directory(root)
@@ -41,6 +47,8 @@ def read_activation(root: Path | None) -> dict:
             return result
         result.update(status="enabled_on_disk" if values[0] == "true" else "disabled_on_disk",
                       reason="Saved configuration only; runtime setting may differ")
+    except ImportError:
+        result["reason"] = "XML parser unavailable in the plugin Python runtime"
     except (OSError, ValueError, ET.ParseError, RecursionError):
         result["reason"] = "Settings file unreadable or invalid"
     return result
